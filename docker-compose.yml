@@ -1,0 +1,52 @@
+services:
+  localstack:
+    container_name: localstack_main
+    image: localstack/localstack-pro # ¡Versión Pro activada para estudiantes! 🎓
+    ports:
+      - "4566:4566" # Edge Port (la ventanilla única)
+      - "443:443" # Puerto HTTPS (Exclusivo de Pro)
+    environment:
+      # Servicios que queremos activar
+      - SERVICES=dynamodb,sqs,sns,events,lambda,apigateway,rds,logs,xray,iam,stepfunctions,cognito-idp,cognito-identity,secretsmanager,fis,backup
+
+      # Tu Token de Estudiante (Leído desde .env para seguridad)
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+
+      # Configuración de Logs y Debugging
+      - DEBUG=1
+      - LS_LOG=trace
+
+      # Persistencia: Guarda tus datos aunque reinicies el contenedor
+      - PERSISTENCE=1
+
+      # Configuración de Red Robusta (DNS local)
+      - DNS_ADDRESS=0
+
+      # Configuración interna de Docker
+      - DOCKER_HOST=unix:///var/run/docker.sock
+
+      # Región por defecto (Consistencia con tu aws-cli)
+      - AWS_DEFAULT_REGION=us-east-1
+
+    # Montar volúmenes locales
+    volumes:
+      - "./localstack-data:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+    # Red Dedicada para aislar el proyecto
+    networks:
+      - cloud-native-net
+
+    # Control de Salud (Healthcheck) - ¡Esto es nivel Pro!
+    # Permite que otros contenedores sepan cuándo LocalStack está "realmente" listo.
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+# Red personalizada para que tus servicios se encuentren por nombre
+networks:
+  cloud-native-net:
+    driver: bridge
