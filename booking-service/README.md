@@ -53,25 +53,25 @@ Microservicio de gestión de reservas con DynamoDB en LocalStack.
 
 ### Prerequisitos
 - Node.js 20+
-- LocalStack corriendo
-- DynamoDB configurado
+- LocalStack corriendo (con `docker-compose up -d` en la raíz del proyecto)
+- DynamoDB configurado (tabla `Bookings` creada)
 
 ### Instalación
 
-```bash
+```powershell
 cd booking-service
 npm install
 ```
 
 ### Desarrollo
 
-```bash
+```powershell
 npm run dev
 ```
 
 ### Tests
 
-```bash
+```powershell
 npm test
 ```
 
@@ -102,12 +102,12 @@ Los modelos se sincronizan mediante eventos de dominio:
 - SK: `BOOKING#{bookingId}`
 
 **GSI 1: UserBookingsIndex**
-- PK: `USER#{userId}`
-- SK: `BOOKING#{createdAt}`
+- PK: `userId` (string, UUID plano)
+- SK: `createdAt` (string ISO)
 
 **GSI 2: EventBookingsIndex**
-- PK: `EVENT#{eventId}`
-- SK: `BOOKING#{createdAt}`
+- PK: `eventId` (string, UUID plano)
+- SK: `createdAt` (string ISO)
 
 **Attributes:**
 - bookingId (string)
@@ -119,19 +119,36 @@ Los modelos se sincronizan mediante eventos de dominio:
 - createdAt (string ISO)
 - updatedAt (string ISO)
 
-## 🧪 Testing
+## 🧪 Testing (Git Bash)
 
-### 1. Inicializar LocalStack y DynamoDB
+> ⚠️ Todos los comandos de esta sección son para **Git Bash** en Windows.
+> Abre Git Bash y ubícate en la raíz del proyecto antes de empezar.
+
+### Paso 1 — Iniciar LocalStack
 
 ```bash
-# Iniciar LocalStack
+# Desde la raíz del proyecto
 docker-compose up -d
 
-# Crear tabla de DynamoDB con GSI
+# Esperar a que esté healthy (~10 segundos) y verificar:
+curl -s http://localhost:4566/_localstack/health | grep dynamodb
+# Debe mostrar: "dynamodb": "available"
+```
+
+### Paso 2 — Crear tabla DynamoDB
+
+```bash
+# Desde la raíz del proyecto
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+
 bash init-dynamodb.sh
 ```
 
-### 2. Iniciar el servicio
+> Si la tabla ya existe, verás el error `Table already exists: Bookings` — eso está bien, significa que ya fue creada antes y los datos persisten.
+
+### Paso 3 — Instalar dependencias e iniciar el servicio
 
 ```bash
 cd booking-service
@@ -139,22 +156,26 @@ npm install
 npm run dev
 ```
 
-### 3. Probar endpoints
+> Cuando veas `Server listening on port 3001`, el servicio está listo.
+
+### Paso 4 — Probar endpoints
+
+Abre **otra pestaña de Git Bash** (deja el servicio corriendo) y ejecuta:
 
 ```bash
-# Health check
+# Health check — debe responder {"status":"healthy"}
 curl http://localhost:3001/health
 
 # Crear una reserva
-curl -X POST http://localhost:3001/api/v1/bookings \
+curl -s -X POST http://localhost:3001/api/v1/bookings \
   -H "Content-Type: application/json" \
-  -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
-    "eventId": "660e8400-e29b-41d4-a716-446655440000",
-    "ticketQuantity": 2,
-    "pricePerTicket": 50.00
-  }'
+  -d '{"userId":"550e8400-e29b-41d4-a716-446655440000","eventId":"660e8400-e29b-41d4-a716-446655440000","ticketQuantity":2,"pricePerTicket":50.00}'
+```
 
+> Guarda el `id` que aparece en la respuesta, lo necesitas para los siguientes comandos.
+> Reemplaza `{bookingId}` con ese ID en los comandos de abajo.
+
+```bash
 # Obtener reserva por ID
 curl http://localhost:3001/api/v1/bookings/{bookingId}
 
@@ -164,27 +185,24 @@ curl -X POST http://localhost:3001/api/v1/bookings/{bookingId}/confirm
 # Cancelar reserva
 curl -X POST http://localhost:3001/api/v1/bookings/{bookingId}/cancel \
   -H "Content-Type: application/json" \
-  -d '{"reason": "User requested cancellation"}'
+  -d '{"reason":"User requested cancellation"}'
 
-# Obtener reservas por usuario
-curl http://localhost:3001/api/v1/bookings/user/{userId}
+# Obtener todas las reservas de un usuario
+curl http://localhost:3001/api/v1/bookings/user/550e8400-e29b-41d4-a716-446655440000
 
-# Obtener reservas por evento
-curl http://localhost:3001/api/v1/bookings/event/{eventId}
+# Obtener todas las reservas de un evento
+curl http://localhost:3001/api/v1/bookings/event/660e8400-e29b-41d4-a716-446655440000
 ```
 
-### 4. Verificar datos en DynamoDB
+### Paso 5 — Verificar datos en DynamoDB (opcional)
 
 ```bash
-# Ver todas las reservas
-awslocal dynamodb scan --table-name Bookings
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
 
-# Ver reservas de un usuario (usando GSI)
-awslocal dynamodb query \
-  --table-name Bookings \
-  --index-name UserBookingsIndex \
-  --key-condition-expression "userId = :userId" \
-  --expression-attribute-values '{":userId":{"S":"550e8400-e29b-41d4-a716-446655440000"}}'
+# Ver todas las reservas guardadas
+aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name Bookings
 ```
 
 ## ✅ Estado Actual
