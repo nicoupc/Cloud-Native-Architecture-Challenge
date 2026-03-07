@@ -8,13 +8,6 @@ spring:
   application:
     name: event-service  # Nombre del servicio
 
-  # Configuración de PostgreSQL (LocalStack)
-  datasource:
-    url: jdbc:postgresql://localhost:4510/events_db
-    username: test
-    password: test
-    driver-class-name: org.postgresql.Driver
-    
   # Configuración de JPA/Hibernate
   jpa:
     hibernate:
@@ -38,3 +31,27 @@ logging:
     org.springframework: INFO   # Logs normales de Spring Boot
     org.hibernate.SQL: DEBUG    # Muestra queries SQL
     org.flywaydb: INFO          # Logs de Flyway migrations
+
+---
+# PERFIL: local (H2 in-memory para desarrollo rápido)
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:h2:mem:events_db;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+
+---
+# PERFIL: localstack (PostgreSQL RDS en LocalStack - PRODUCCIÓN LOCAL)
+spring:
+  config:
+    activate:
+      on-profile: localstack
+  datasource:
+    url: jdbc:postgresql://localhost:4510/events_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver

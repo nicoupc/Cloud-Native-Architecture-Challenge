@@ -39,15 +39,25 @@ Microservicio de gestión de eventos implementando Hexagonal Architecture (Ports
 # Desde la raíz del proyecto
 docker-compose up -d
 
-# Inicializar PostgreSQL
+# Verificar que LocalStack está corriendo
+curl http://localhost:4566/_localstack/health
+
+# Inicializar PostgreSQL RDS
 bash init-localstack.sh
 ```
 
 ### 2. Ejecutar el servicio
 
+**Opción A: Con H2 (desarrollo rápido)**
 ```bash
 cd event-service
-mvn spring-boot:run
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+**Opción B: Con PostgreSQL RDS en LocalStack (producción local)**
+```bash
+cd event-service
+mvn spring-boot:run -Dspring-boot.run.profiles=localstack
 ```
 
 ### 3. Probar el API
@@ -59,14 +69,7 @@ curl http://localhost:8080/api/v1/events/health
 # Crear evento
 curl -X POST http://localhost:8080/api/v1/events \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Concierto Radiohead 2026",
-    "description": "Concierto en vivo",
-    "type": "CONCERT",
-    "eventDate": "2026-12-31T20:00:00",
-    "capacity": 50000,
-    "price": "150.00"
-  }'
+  -d @test-create-event.json
 ```
 
 ## 📦 Componentes
@@ -99,21 +102,35 @@ mvn test jacoco:report
 
 ## 🗄️ Base de Datos
 
-### Conexión PostgreSQL (LocalStack)
+### Perfiles de Configuración
+
+El servicio soporta dos perfiles:
+
+**Profile: `local` (por defecto)**
+- Base de datos: H2 in-memory
+- Uso: Desarrollo rápido y tests
+- No requiere LocalStack
+
+**Profile: `localstack`**
+- Base de datos: PostgreSQL RDS en LocalStack
+- Uso: Ambiente similar a producción
+- Requiere LocalStack corriendo
+
+### Conexión PostgreSQL RDS (LocalStack)
 
 ```yaml
 Host: localhost
 Port: 4510
 Database: events_db
-Username: test
-Password: test
+Username: postgres
+Password: postgres
 ```
 
 ### Migraciones Flyway
 
 Las migraciones se ejecutan automáticamente al iniciar:
 
-- `V1__create_events_table.sql`: Crea tabla events con índices
+- `V1__create_events_table.sql`: Crea tabla events con índices y constraints
 
 ## 📚 Patrones Implementados
 
@@ -137,17 +154,34 @@ Las migraciones se ejecutan automáticamente al iniciar:
 
 ## 🔧 Configuración
 
-### application.yml
+### application.yml - Perfiles
 
+**Configuración Base (común a todos los perfiles)**
 ```yaml
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:4510/events_db
   jpa:
     hibernate:
       ddl-auto: validate  # Flyway maneja migraciones
   flyway:
     enabled: true
+```
+
+**Profile: local**
+```yaml
+spring:
+  datasource:
+    url: jdbc:h2:mem:events_db;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+```
+
+**Profile: localstack**
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:4510/events_db
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
 ```
 
 ## 📝 Convenciones de Código
