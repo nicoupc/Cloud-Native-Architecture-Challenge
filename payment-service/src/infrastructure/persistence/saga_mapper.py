@@ -6,6 +6,7 @@ Keeps domain layer pure and independent of infrastructure.
 """
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Dict, Any
 
 from ...domain.payment_saga import PaymentSaga
@@ -20,36 +21,30 @@ class SagaMapper:
     def to_dynamodb(saga: PaymentSaga) -> Dict[str, Any]:
         """
         Convert domain PaymentSaga to DynamoDB item
-        
-        Args:
-            saga: Domain saga object
-            
-        Returns:
-            DynamoDB item dictionary
         """
         return {
-            "PK": f"SAGA#{saga.saga_id.value}",
-            "SK": f"SAGA#{saga.saga_id.value}",
-            "sagaId": saga.saga_id.value,
+            "PK": f"SAGA#{saga.id.value}",
+            "SK": f"SAGA#{saga.id.value}",
+            "sagaId": saga.id.value,
             "bookingId": saga.booking_id.value,
-            "amount": saga.amount.value,
+            "amount": Decimal(str(saga.amount.value)),
             "currency": saga.amount.currency,
-            "status": saga.status.value,
+            "status": saga.state.value,
             "currentStepIndex": saga.current_step_index,
             "steps": [
                 {
                     "name": step.name,
                     "status": step.status,
-                    "attempts": step.attempts,
-                    "lastError": step.last_error,
-                    "executedAt": step.executed_at.isoformat() if step.executed_at else None
+                    "retry_count": step.retry_count,
+                    "error_message": step.error_message,
+                    "started_at": step.started_at.isoformat() if step.started_at else None,
+                    "completed_at": step.completed_at.isoformat() if step.completed_at else None,
                 }
                 for step in saga.steps
             ],
             "createdAt": saga.created_at.isoformat(),
             "updatedAt": saga.updated_at.isoformat(),
             "completedAt": saga.completed_at.isoformat() if saga.completed_at else None,
-            "metadata": saga.metadata
         }
     
     @staticmethod
@@ -66,7 +61,7 @@ class SagaMapper:
         # Reconstruct value objects
         saga_id = SagaId(item["sagaId"])
         booking_id = BookingId(item["bookingId"])
-        amount = Amount(item["amount"], item["currency"])
+        amount = Amount(float(item["amount"]), item["currency"])
         status = SagaState(item["status"])
         
         # Reconstruct steps
@@ -74,27 +69,25 @@ class SagaMapper:
             SagaStep(
                 name=step_data["name"],
                 status=step_data["status"],
-                attempts=step_data["attempts"],
-                last_error=step_data.get("lastError"),
-                executed_at=datetime.fromisoformat(step_data["executedAt"]) if step_data.get("executedAt") else None
+                retry_count=int(step_data.get("retry_count", 0)),
+                error_message=step_data.get("error_message"),
+                started_at=datetime.fromisoformat(step_data["started_at"]) if step_data.get("started_at") else None,
+                completed_at=datetime.fromisoformat(step_data["completed_at"]) if step_data.get("completed_at") else None,
             )
             for step_data in item["steps"]
         ]
         
-        # Create saga instance
+        # Create saga instance restoring full state
         saga = PaymentSaga(
-            saga_id=saga_id,
+            id=saga_id,
             booking_id=booking_id,
-            amount=amount
+            amount=amount,
+            state=status,
+            steps=steps,
+            current_step_index=int(item["currentStepIndex"]),
+            created_at=datetime.fromisoformat(item["createdAt"]),
+            updated_at=datetime.fromisoformat(item["updatedAt"]),
+            completed_at=datetime.fromisoformat(item["completedAt"]) if item.get("completedAt") else None,
         )
-        
-        # Restore state
-        saga._status = status
-        saga._current_step_index = item["currentStepIndex"]
-        saga._steps = steps
-        saga._created_at = datetime.fromisoformat(item["createdAt"])
-        saga._updated_at = datetime.fromisoformat(item["updatedAt"])
-        saga._completed_at = datetime.fromisoformat(item["completedAt"]) if item.get("completedAt") else None
-        saga._metadata = item.get("metadata", {})
         
         return saga

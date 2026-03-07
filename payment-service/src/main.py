@@ -15,7 +15,7 @@ from .infrastructure.messaging.eventbridge_publisher import EventBridgePublisher
 from .infrastructure.gateway.mock_payment_gateway import MockPaymentGateway
 from .infrastructure.clients.booking_service_client import HttpBookingServiceClient
 from .infrastructure.clients.notification_service_client import EventBridgeNotificationClient
-from .infrastructure.api.saga_controller import router as saga_router
+from .infrastructure.api.saga_controller import router as saga_router, get_orchestrator as controller_get_orchestrator
 
 
 # Global orchestrator instance (simple DI)
@@ -48,8 +48,8 @@ async def lifespan(app: FastAPI):
         saga_repository=saga_repository,
         event_publisher=event_publisher,
         payment_gateway=payment_gateway,
-        booking_client=booking_client,
-        notification_client=notification_client
+        booking_service=booking_client,
+        notification_service=notification_client
     )
     
     print("✅ Payment Service started successfully")
@@ -80,8 +80,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Override dependency
-saga_router.dependency_overrides[saga_router.get_orchestrator] = get_orchestrator
+# Override dependency in the app (not the router)
+app.dependency_overrides[controller_get_orchestrator] = get_orchestrator
 
 # Register routers
 app.include_router(saga_router)

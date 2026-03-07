@@ -37,26 +37,26 @@ def get_orchestrator() -> SagaOrchestrator:
 def saga_to_response(saga) -> SagaResponse:
     """Convert domain saga to response DTO"""
     return SagaResponse(
-        saga_id=saga.saga_id.value,
+        saga_id=saga.id.value,
         booking_id=saga.booking_id.value,
         amount=saga.amount.value,
         currency=saga.amount.currency,
-        status=saga.status.value,
+        status=saga.state.value,
         current_step_index=saga.current_step_index,
         steps=[
             SagaStepResponse(
                 name=step.name,
                 status=step.status,
-                attempts=step.attempts,
-                last_error=step.last_error,
-                executed_at=step.executed_at
+                attempts=step.retry_count,
+                last_error=step.error_message,
+                executed_at=step.completed_at
             )
             for step in saga.steps
         ],
         created_at=saga.created_at,
         updated_at=saga.updated_at,
         completed_at=saga.completed_at,
-        metadata=saga.metadata
+        metadata={}
     )
 
 
@@ -199,7 +199,7 @@ async def compensate_saga(
                 detail=f"Saga {saga_id} not found"
             )
         
-        compensated_saga = await orchestrator.compensate(saga)
+        compensated_saga = await orchestrator._compensate_saga(saga, "Manual compensation requested")
         
         return saga_to_response(compensated_saga)
         

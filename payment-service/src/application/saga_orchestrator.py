@@ -402,6 +402,7 @@ class SagaOrchestrator:
         )
         
         logger.info(f"Saga {saga.id} compensated successfully")
+        return saga
     
     async def _compensate_step(self, saga: PaymentSaga, step_name: str) -> None:
         """
