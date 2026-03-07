@@ -50,10 +50,10 @@ export class BookingController {
     this.router.post('/bookings/:id/confirm', this.confirmBooking.bind(this));
     this.router.post('/bookings/:id/cancel', this.cancelBooking.bind(this));
 
-    // Queries (Read operations)
-    this.router.get('/bookings/:id', this.getBookingById.bind(this));
+    // Queries (Read operations) - specific routes BEFORE generic :id
     this.router.get('/bookings/user/:userId', this.getBookingsByUser.bind(this));
     this.router.get('/bookings/event/:eventId', this.getBookingsByEvent.bind(this));
+    this.router.get('/bookings/:id', this.getBookingById.bind(this));
   }
 
   /**
