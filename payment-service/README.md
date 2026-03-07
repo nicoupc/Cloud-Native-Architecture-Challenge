@@ -291,32 +291,137 @@ pytest
 pytest --cov=src  # Con cobertura
 ```
 
-## 🧪 Testing
+## 🧪 Testing (Git Bash)
 
-### Probar Happy Path
+> ⚠️ Todos los comandos de esta sección son para **Git Bash** en Windows.
+> Abre Git Bash y ubícate en la raíz del proyecto antes de empezar.
+
+### Paso 1 — Iniciar LocalStack
 
 ```bash
-# 1. Crear booking en Booking Service
-curl -X POST http://localhost:3001/api/v1/bookings \
-  -H "Content-Type: application/json" \
-  -d '{
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
-    "eventId": "660e8400-e29b-41d4-a716-446655440000",
-    "ticketQuantity": 2,
-    "pricePerTicket": 50.00
-  }'
+# Desde la raíz del proyecto
+docker-compose up -d
 
-# 2. Payment Service escucha BookingCreated y inicia saga automáticamente
-
-# 3. Consultar estado de saga
-curl http://localhost:3002/api/v1/payments/saga/{sagaId}
+# Esperar a que esté healthy (~10 segundos) y verificar:
+curl -s http://localhost:4566/_localstack/health | grep dynamodb
+# Debe mostrar: "dynamodb": "available"
 ```
 
-### Probar Failure Path
+### Paso 2 — Crear tabla DynamoDB
 
 ```bash
-# Forzar fallo en payment gateway (configuración)
-# La saga ejecutará compensación automáticamente
+# Desde la raíz del proyecto
+cd payment-service
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+
+bash scripts/init-dynamodb.sh
+```
+
+> Si la tabla ya existe, verás `Table payment-sagas already exists` — eso está bien, significa que ya fue creada antes y los datos persisten.
+
+### Paso 3 — Activar virtual environment e instalar dependencias
+
+```bash
+# Desde payment-service/
+python -m venv venv
+source venv/Scripts/activate
+
+# Verificar que estás en el venv (deberías ver (venv) en tu prompt)
+which python  # Debe apuntar a venv/Scripts/python
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### Paso 4 — Iniciar el servicio
+
+```bash
+# Asegúrate de estar en payment-service/ con venv activado
+python -m src.main
+```
+
+> Cuando veas `✅ Payment Service started successfully`, el servicio está listo en http://localhost:3002
+
+### Paso 5 — Probar endpoints
+
+Abre **otra pestaña de Git Bash** (deja el servicio corriendo) y ejecuta:
+
+```bash
+# Health check — debe responder {"status":"healthy"}
+curl http://localhost:3002/health
+
+# Iniciar una saga de pago
+SAGA_RESPONSE=$(curl -s -X POST http://localhost:3002/api/v1/sagas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "booking_id": "550e8400-e29b-41d4-a716-446655440000",
+    "amount": 100.00,
+    "currency": "USD"
+  }')
+
+echo "$SAGA_RESPONSE"
+
+# Extraer el saga_id de la respuesta
+SAGA_ID=$(echo "$SAGA_RESPONSE" | grep -o '"saga_id":"[^"]*"' | cut -d'"' -f4)
+echo "Saga ID: $SAGA_ID"
+```
+
+> Guarda el `saga_id` que aparece en la respuesta, lo necesitas para los siguientes comandos.
+> Reemplaza `{sagaId}` con ese ID en los comandos de abajo.
+
+```bash
+# Obtener estado de la saga
+curl http://localhost:3002/api/v1/sagas/{sagaId}
+
+# Listar todas las sagas
+curl http://localhost:3002/api/v1/sagas
+
+# Forzar compensación (rollback) de una saga
+curl -X POST http://localhost:3002/api/v1/sagas/{sagaId}/compensate
+```
+
+### Paso 6 — Verificar datos en DynamoDB (opcional)
+
+```bash
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+
+# Ver todas las sagas guardadas
+aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name payment-sagas
+```
+
+### Probar Happy Path (Saga exitosa)
+
+El Mock Payment Gateway tiene un 80% de tasa de éxito. Si creas varias sagas, algunas completarán exitosamente:
+
+```bash
+# Crear múltiples sagas para ver diferentes resultados
+for i in {1..5}; do
+  curl -s -X POST http://localhost:3002/api/v1/sagas \
+    -H "Content-Type: application/json" \
+    -d "{\"booking_id\":\"550e8400-e29b-41d4-a716-44665544000$i\",\"amount\":100.00,\"currency\":\"USD\"}" \
+    | grep -o '"status":"[^"]*"'
+  echo ""
+done
+```
+
+### Probar Failure Path (Compensación)
+
+Algunas sagas fallarán automáticamente (20% de probabilidad) y ejecutarán compensación. Puedes forzar compensación manualmente:
+
+```bash
+# Forzar compensación de una saga específica
+curl -X POST http://localhost:3002/api/v1/sagas/{sagaId}/compensate
+```
+
+### Desactivar Virtual Environment
+
+```bash
+# Cuando termines de trabajar
+deactivate
 ```
 
 ## 📚 Recursos de Aprendizaje
@@ -332,14 +437,53 @@ curl http://localhost:3002/api/v1/payments/saga/{sagaId}
 ### Distributed Transactions
 - [Distributed Transactions: The Icebergs of Microservices](https://www.grahamlea.com/2016/08/distributed-transactions-microservices-icebergs/)
 
-## 🎯 Próximos Pasos
+## ✅ Estado Actual
 
-- [ ] Implementar Domain Layer
-- [ ] Implementar Application Layer (Orchestrator)
-- [ ] Configurar DynamoDB para saga state
-- [ ] Implementar adapters (Payment Gateway, Booking Client)
-- [ ] Tests unitarios
-- [ ] Integración con Booking Service
+- [x] Domain Layer (100%)
+- [x] Application Layer (100%)
+- [x] Infrastructure Layer (100%)
+- [x] REST API (100%)
+- [x] Tests unitarios (70+ tests passing)
+- [x] DynamoDB configurado con GSI
+- [x] Script de inicialización
+- [ ] Tests de integración con LocalStack
+- [ ] SQS Consumer para BookingCreated events
+- [ ] Integración end-to-end con Booking Service
+
+## 🛠️ Troubleshooting
+
+**Error: "Connection refused" al iniciar el servicio**
+- Verifica que LocalStack está corriendo: `docker ps`
+- Verifica que creaste la tabla DynamoDB (Paso 2)
+
+**Error: "Table does not exist"**
+- Ejecuta de nuevo el script: `bash scripts/init-dynamodb.sh`
+
+**Error: "Port 3002 already in use"**
+- Desde Git Bash: encuentra y detén el proceso
+  ```bash
+  # Ver qué proceso usa el puerto 3002
+  netstat -ano | grep :3002
+  # Copia el PID y ejecuta desde PowerShell:
+  # Stop-Process -Id <PID> -Force
+  ```
+
+**Error: "ModuleNotFoundError: No module named 'fastapi'"**
+- Asegúrate de tener el virtual environment activado (deberías ver `(venv)` en tu prompt)
+- Si no está activado: `source venv/Scripts/activate`
+- Reinstala dependencias: `pip install -r requirements.txt`
+
+**Error: "No module named 'src'"**
+- Asegúrate de estar en el directorio `payment-service/`
+- Ejecuta: `python -m src.main` (no `python src/main.py`)
+
+## 📚 Conceptos Clave
+
+**Saga Pattern:** Transacciones distribuidas sin 2PC (Two-Phase Commit)
+**Orchestration:** Coordinador central que controla el flujo
+**Compensation:** Rollback semántico para deshacer operaciones
+**Idempotencia:** Operaciones que pueden ejecutarse múltiples veces sin efectos secundarios
+**State Machine:** Control de estados y transiciones válidas
 
 ## 📝 Notas de Diseño
 
