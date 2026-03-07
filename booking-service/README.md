@@ -119,13 +119,82 @@ Los modelos se sincronizan mediante eventos de dominio:
 - createdAt (string ISO)
 - updatedAt (string ISO)
 
-## 🎯 Próximos Pasos
+## 🧪 Testing
 
-- [ ] Implementar Domain Layer
-- [ ] Implementar Application Layer (CQRS)
-- [ ] Configurar DynamoDB con GSI
-- [ ] Implementar REST API
-- [ ] Tests unitarios
+### 1. Inicializar LocalStack y DynamoDB
+
+```bash
+# Iniciar LocalStack
+docker-compose up -d
+
+# Crear tabla de DynamoDB con GSI
+bash init-dynamodb.sh
+```
+
+### 2. Iniciar el servicio
+
+```bash
+cd booking-service
+npm install
+npm run dev
+```
+
+### 3. Probar endpoints
+
+```bash
+# Health check
+curl http://localhost:3001/health
+
+# Crear una reserva
+curl -X POST http://localhost:3001/api/v1/bookings \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "eventId": "660e8400-e29b-41d4-a716-446655440000",
+    "ticketQuantity": 2,
+    "pricePerTicket": 50.00
+  }'
+
+# Obtener reserva por ID
+curl http://localhost:3001/api/v1/bookings/{bookingId}
+
+# Confirmar reserva
+curl -X POST http://localhost:3001/api/v1/bookings/{bookingId}/confirm
+
+# Cancelar reserva
+curl -X POST http://localhost:3001/api/v1/bookings/{bookingId}/cancel \
+  -H "Content-Type: application/json" \
+  -d '{"reason": "User requested cancellation"}'
+
+# Obtener reservas por usuario
+curl http://localhost:3001/api/v1/bookings/user/{userId}
+
+# Obtener reservas por evento
+curl http://localhost:3001/api/v1/bookings/event/{eventId}
+```
+
+### 4. Verificar datos en DynamoDB
+
+```bash
+# Ver todas las reservas
+awslocal dynamodb scan --table-name Bookings
+
+# Ver reservas de un usuario (usando GSI)
+awslocal dynamodb query \
+  --table-name Bookings \
+  --index-name UserBookingsIndex \
+  --key-condition-expression "userId = :userId" \
+  --expression-attribute-values '{":userId":{"S":"550e8400-e29b-41d4-a716-446655440000"}}'
+```
+
+## ✅ Estado Actual
+
+- [x] Domain Layer (100%)
+- [x] Application Layer (100%)
+- [x] Infrastructure Layer (100%)
+- [x] REST API (100%)
+- [x] Tests unitarios (41 tests passing)
+- [ ] Tests de integración
 - [ ] Integración con Event Service
 
 ## 📚 Conceptos Clave
