@@ -14,6 +14,16 @@ build/
 *.dll
 *.exe
 
+# Java/Maven
+target/
+*.class
+*.jar
+*.war
+*.ear
+.mvn/
+mvnw
+mvnw.cmd
+
 # IDE
 .vscode/
 .idea/
@@ -21,6 +31,7 @@ build/
 *.swo
 *~
 .DS_Store
+.kiro/
 
 # Environment
 .env
@@ -41,6 +52,7 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+test-*.json
 
 # LocalStack Data (Do NOT commit)
 localstack-data/

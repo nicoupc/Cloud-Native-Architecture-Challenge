@@ -5,6 +5,7 @@ services:
     ports:
       - "4566:4566" # Edge Port (la ventanilla única)
       - "443:443" # Puerto HTTPS (Exclusivo de Pro)
+      - "4510:4510" # Puerto PostgreSQL (RDS)
     environment:
       # Servicios que queremos activar
       - SERVICES=dynamodb,sqs,sns,events,lambda,apigateway,rds,logs,xray,iam,stepfunctions,cognito-idp,cognito-identity,secretsmanager,fis,backup
