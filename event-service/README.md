@@ -1,199 +1,202 @@
 # Event Service - Hexagonal Architecture
 
-Microservicio de gestión de eventos implementando Hexagonal Architecture (Ports & Adapters).
-
-## 🏗️ Arquitectura
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     INFRASTRUCTURE LAYER                     │
-│  ┌──────────────┐              ┌──────────────────────────┐ │
-│  │ REST API     │              │ PostgreSQL Adapter       │ │
-│  │ (IN Adapter) │              │ (OUT Adapter)            │ │
-│  └──────┬───────┘              └──────────┬───────────────┘ │
-│         │                                  │                 │
-│         │                                  │                 │
-│  ┌──────▼──────────────────────────────────▼───────────────┐│
-│  │              APPLICATION LAYER                           ││
-│  │  ┌────────────────────────────────────────────────────┐ ││
-│  │  │ CreateEventService (Use Case)                      │ ││
-│  │  └────────────────────────────────────────────────────┘ ││
-│  └──────────────────────────────────────────────────────────┘│
-│         │                                  │                 │
-│         │                                  │                 │
-│  ┌──────▼──────────────────────────────────▼───────────────┐│
-│  │              DOMAIN LAYER (Core Business Logic)         ││
-│  │  ┌────────────┐  ┌──────────────┐  ┌────────────────┐  ││
-│  │  │ Event      │  │ Value Objects│  │ EventRepository│  ││
-│  │  │ (Aggregate)│  │ (Immutable)  │  │ (Port)         │  ││
-│  │  └────────────┘  └──────────────┘  └────────────────┘  ││
-│  └──────────────────────────────────────────────────────────┘│
-└─────────────────────────────────────────────────────────────┘
-```
+Microservicio de gestión de eventos con PostgreSQL RDS en LocalStack.
 
 ## 🚀 Inicio Rápido
 
-### 1. Iniciar LocalStack
+### Prerequisitos
 
-```bash
+- Docker y Docker Compose
+- Java 17+
+- Maven (instalado con `choco install maven -y`)
+
+### Paso 1: Iniciar LocalStack
+
+```powershell
 # Desde la raíz del proyecto
 docker-compose up -d
 
-# Verificar que LocalStack está corriendo
+# Verificar que está corriendo
 curl http://localhost:4566/_localstack/health
+```
 
-# Inicializar PostgreSQL RDS
+### Paso 2: Crear Base de Datos PostgreSQL
+
+**Solo necesitas hacer esto UNA VEZ.** Los datos persisten automáticamente en la carpeta `localstack-data/`.
+Solo necesitarás repetirlo si borras esa carpeta o usas `docker-compose down -v` (que elimina los volúmenes).
+
+**En Windows (PowerShell):**
+```powershell
+$env:AWS_ACCESS_KEY_ID = "test"
+$env:AWS_SECRET_ACCESS_KEY = "test"
+$env:AWS_DEFAULT_REGION = "us-east-1"
+
+aws --endpoint-url=http://localhost:4566 rds create-db-instance `
+    --db-instance-identifier events-db `
+    --db-instance-class db.t3.micro `
+    --engine postgres `
+    --engine-version 14.7 `
+    --master-username postgres `
+    --master-user-password postgres `
+    --allocated-storage 20 `
+    --db-name events_db `
+    --port 4510 `
+    --region us-east-1
+```
+
+**En Mac/Linux (Git Bash):**
+```bash
+# Desde la raíz del proyecto
 bash init-localstack.sh
 ```
 
-### 2. Ejecutar el servicio
+### Paso 3: Ejecutar el Event Service
 
-**Opción A: Con H2 (desarrollo rápido)**
-```bash
+```powershell
 cd event-service
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+mvn spring-boot:run
 ```
 
-**Opción B: Con PostgreSQL RDS en LocalStack (producción local)**
-```bash
-cd event-service
-mvn spring-boot:run -Dspring-boot.run.profiles=localstack
-```
+Espera a ver: `Started EventServiceApplication in X.XXX seconds`
 
-### 3. Probar el API
+### Paso 4: Probar el API
 
-```bash
-# Health check
+**Health Check:**
+```powershell
 curl http://localhost:8080/api/v1/events/health
+```
 
-# Crear evento
+Respuesta: `Event Service is running!`
+
+**Crear un Evento (PowerShell):**
+```powershell
+$body = Get-Content ..\test-create-event.json -Raw
+Invoke-RestMethod -Uri "http://localhost:8080/api/v1/events" -Method POST -Body $body -ContentType "application/json"
+```
+
+**Crear un Evento (Git Bash / Mac / Linux):**
+```bash
+# Desde la raíz del proyecto
 curl -X POST http://localhost:8080/api/v1/events \
   -H "Content-Type: application/json" \
   -d @test-create-event.json
 ```
 
-## 📦 Componentes
+Verás el evento creado con su ID.
 
-### Domain Layer (Núcleo de Negocio)
+## 🗄️ Ver los Datos en PostgreSQL
 
-- **Event** (Aggregate): Entidad principal con lógica de negocio
-- **Value Objects**: EventId, Capacity, Price, EventType, EventStatus
-- **Ports**: EventRepository (interface)
-
-### Application Layer (Casos de Uso)
-
-- **CreateEventService**: Orquesta la creación de eventos
-
-### Infrastructure Layer (Adaptadores)
-
-- **REST API**: EventController (IN Adapter)
-- **PostgreSQL**: PostgresEventRepositoryAdapter (OUT Adapter)
-- **JPA**: EventEntity, JpaEventRepository, EventMapper
-
-## 🧪 Testing
+### Opción 1: Usando psql (línea de comandos)
 
 ```bash
-# Tests unitarios
+# Conectar a la base de datos
+psql -h localhost -p 4510 -U postgres -d events_db
+
+# Ver todas las tablas
+\dt
+
+# Ver eventos
+SELECT * FROM events;
+
+# Salir
+\q
+```
+
+### Opción 2: Usando DBeaver (GUI)
+
+1. Descargar DBeaver: https://dbeaver.io/download/
+2. Crear nueva conexión PostgreSQL:
+   - Host: `localhost`
+   - Port: `4510`
+   - Database: `events_db`
+   - Username: `postgres`
+   - Password: `postgres`
+3. Conectar y explorar la tabla `events`
+
+## 🧪 Tests
+
+```bash
+cd event-service
 mvn test
-
-# Tests con cobertura
-mvn test jacoco:report
 ```
 
-## 🗄️ Base de Datos
+Resultado esperado: `Tests run: 10, Failures: 0, Errors: 0`
 
-### Perfiles de Configuración
+## 🏗️ Arquitectura Hexagonal
 
-El servicio soporta dos perfiles:
-
-**Profile: `local` (por defecto)**
-- Base de datos: H2 in-memory
-- Uso: Desarrollo rápido y tests
-- No requiere LocalStack
-
-**Profile: `localstack`**
-- Base de datos: PostgreSQL RDS en LocalStack
-- Uso: Ambiente similar a producción
-- Requiere LocalStack corriendo
-
-### Conexión PostgreSQL RDS (LocalStack)
-
-```yaml
-Host: localhost
-Port: 4510
-Database: events_db
-Username: postgres
-Password: postgres
+```
+┌─────────────────────────────────────────┐
+│         Infrastructure Layer            │
+│  ┌──────────┐      ┌─────────────────┐ │
+│  │ REST API │      │ PostgreSQL RDS  │ │
+│  │  (IN)    │      │     (OUT)       │ │
+│  └────┬─────┘      └────────┬────────┘ │
+│       │                     │          │
+│  ┌────▼─────────────────────▼────────┐ │
+│  │      Application Layer            │ │
+│  │   (CreateEventService)            │ │
+│  └────┬──────────────────────────────┘ │
+│       │                                │
+│  ┌────▼──────────────────────────────┐ │
+│  │       Domain Layer                │ │
+│  │  (Event, Value Objects, Ports)    │ │
+│  └───────────────────────────────────┘ │
+└─────────────────────────────────────────┘
 ```
 
-### Migraciones Flyway
+**Principio clave:** El dominio NO conoce PostgreSQL, Spring Boot, ni JPA.
 
-Las migraciones se ejecutan automáticamente al iniciar:
+## 📦 Componentes
 
-- `V1__create_events_table.sql`: Crea tabla events con índices y constraints
+- **Domain Layer:** Event (Aggregate), EventId, Capacity, Price, EventType, EventStatus
+- **Application Layer:** CreateEventService (Use Case)
+- **Infrastructure Layer:** 
+  - EventController (REST API)
+  - PostgresEventRepositoryAdapter (PostgreSQL)
+  - EventEntity, EventMapper (JPA)
 
-## 📚 Patrones Implementados
+## 🔄 Flujo de Datos
 
-### Hexagonal Architecture
+1. Cliente → REST API (EventController)
+2. Controller → Application Service (CreateEventService)
+3. Service → Domain (Event.create())
+4. Service → Repository Port (EventRepository interface)
+5. Port → Adapter (PostgresEventRepositoryAdapter)
+6. Adapter → PostgreSQL RDS (LocalStack)
 
-- **Ports**: Interfaces que definen contratos (EventRepository)
-- **Adapters**: Implementaciones concretas (PostgresEventRepositoryAdapter)
-- **Domain Independence**: El dominio NO conoce Spring Boot, JPA, ni PostgreSQL
+## 🛠️ Troubleshooting
 
-### Domain-Driven Design
+**Error: "Connection refused" al iniciar el servicio**
+- Verifica que LocalStack está corriendo: `docker ps`
+- Verifica que creaste la base de datos (Paso 2)
 
-- **Aggregates**: Event (raíz del agregado)
-- **Value Objects**: Objetos inmutables (EventId, Capacity, Price)
-- **Factory Methods**: Event.create() garantiza validez
+**Error: "Database does not exist"**
+- Ejecuta de nuevo el comando del Paso 2 para crear la instancia RDS
 
-### Dependency Inversion
-
-- El dominio define QUÉ necesita (Port)
-- La infraestructura define CÓMO lo hace (Adapter)
-- Spring Boot conecta todo automáticamente
-
-## 🔧 Configuración
-
-### application.yml - Perfiles
-
-**Configuración Base (común a todos los perfiles)**
-```yaml
-spring:
-  jpa:
-    hibernate:
-      ddl-auto: validate  # Flyway maneja migraciones
-  flyway:
-    enabled: true
-```
-
-**Profile: local**
-```yaml
-spring:
-  datasource:
-    url: jdbc:h2:mem:events_db;MODE=PostgreSQL
-    driver-class-name: org.h2.Driver
-```
-
-**Profile: localstack**
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:4510/events_db
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-```
-
-## 📝 Convenciones de Código
-
-- **Domain**: Sin dependencias externas (Java puro)
-- **Application**: Solo depende del Domain
-- **Infrastructure**: Depende de Domain y frameworks
+**Error: "Port 8080 already in use"**
+- Encuentra y detén el proceso que usa ese puerto (PowerShell):
+  ```powershell
+  # Ver qué proceso usa el puerto 8080
+  netstat -ano | findstr :8080
+  # Copia el PID (último número) y ejecútalo aquí:
+  Stop-Process -Id <PID> -Force
+  ```
+- O cambia el puerto en `application.yml` (`server.port: 8081`)
 
 ## 🎯 Próximos Pasos
 
-- [ ] Agregar EventBridge para publicar eventos
-- [ ] Implementar más endpoints (GET, PUT, DELETE)
-- [ ] Agregar validaciones con Bean Validation
-- [ ] Implementar Exception Handling global
-- [ ] Agregar logging estructurado
+- [ ] EventBridge integration (publicar eventos)
+- [ ] Más endpoints REST (GET, PUT, DELETE)
+- [ ] Exception handling global
+- [ ] Logging estructurado
+- [ ] Migración a AWS real
+
+Este proyecto demuestra:
+- ✅ Hexagonal Architecture (Ports & Adapters)
+- ✅ Domain-Driven Design (Aggregates, Value Objects)
+- ✅ PostgreSQL RDS en LocalStack
+- ✅ Flyway Migrations
+- ✅ Spring Boot con JPA
+- ✅ Tests unitarios completos
+
+**Preparado para migrar a AWS:** Solo cambiar el datasource URL a RDS real.
