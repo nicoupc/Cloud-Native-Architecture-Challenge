@@ -1,0 +1,8 @@
+{
+  "name": "Concierto Radiohead 2026",
+  "description": "Concierto en vivo de Radiohead en el Estadio Nacional",
+  "type": "CONCERT",
+  "eventDate": "2026-12-31T20:00:00",
+  "capacity": 50000,
+  "price": "150.00"
+}
