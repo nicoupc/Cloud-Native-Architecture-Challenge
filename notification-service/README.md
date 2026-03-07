@@ -1,230 +1,38 @@
 # Notification Service - Buffer Pattern
 
-Microservicio de notificaciones con patrón Buffer para procesamiento asíncrono de mensajes.
-
-## 🎯 Patrón Arquitectónico: Buffer Pattern
-
-El Buffer Pattern es un patrón para desacoplar productores y consumidores de mensajes usando una cola (buffer). Permite procesar mensajes de forma asíncrona, con reintentos automáticos y manejo de fallos.
-
-### ¿Por qué Buffer Pattern?
-
-**Problema:**
-Enviar notificaciones de forma síncrona puede:
-- Bloquear el flujo principal si el servicio de email falla
-- Perder mensajes si el servicio está caído
-- No escalar bien con alto volumen de notificaciones
-
-**Solución:**
-Buffer Pattern usa SQS como cola intermedia:
-- Productores publican mensajes a SQS
-- Consumidores procesan mensajes de forma asíncrona
-- Reintentos automáticos si falla el procesamiento
-- Dead Letter Queue (DLQ) para mensajes que fallan repetidamente
-
-### Buffer Pattern vs Direct Call
-
-**Direct Call (sin buffer):**
-- ❌ Acoplamiento fuerte
-- ❌ Sin reintentos automáticos
-- ❌ Pierde mensajes si el servicio falla
-- ❌ No escala bien
-
-**Buffer Pattern (con SQS):**
-- ✅ Desacoplamiento total
-- ✅ Reintentos automáticos
-- ✅ Persistencia de mensajes
-- ✅ Escalabilidad horizontal
-- ✅ DLQ para mensajes fallidos
-
-## 🏗️ Arquitectura
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                 Notification Service                        │
-│                   (Buffer Pattern)                          │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Domain Layer                            │  │
-│  │  ┌────────────────┐  ┌──────────────────────────┐   │  │
-│  │  │  Notification  │  │   Email Templates        │   │  │
-│  │  │   (Aggregate)  │  │   - BookingConfirmed     │   │  │
-│  │  │                │  │   - PaymentProcessed     │   │  │
-│  │  └────────────────┘  └──────────────────────────┘   │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │           Application Layer                          │  │
-│  │  ┌────────────────────────────────────────────────┐  │  │
-│  │  │      Notification Processor                    │  │  │
-│  │  │  - processMessage()                            │  │  │
-│  │  │  - sendEmail()                                 │  │  │
-│  │  │  - handleFailure()                             │  │  │
-│  │  └────────────────────────────────────────────────┘  │  │
-│  └──────────────────────────────────────────────────────┘  │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │          Infrastructure Layer                        │  │
-│  │  ┌──────────┐  ┌──────────┐  ┌─────────────────┐   │  │
-│  │  │   SQS    │  │   DLQ    │  │  Mock Email     │   │  │
-│  │  │ Consumer │  │  (Failed)│  │    Provider     │   │  │
-│  │  └──────────┘  └──────────┘  └─────────────────┘   │  │
-│  └──────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 🔄 Message Flow
-
-### Happy Path (Éxito)
-
-```
-1. EventBridge → SQS Queue
-   ↓
-2. Consumer polls SQS (long polling)
-   ↓
-3. Process message (send email)
-   ↓
-4. Delete message from queue
-   ↓
-5. COMPLETED
-```
-
-### Failure Path (Reintentos y DLQ)
-
-```
-1. EventBridge → SQS Queue
-   ↓
-2. Consumer polls SQS
-   ↓
-3. Process message → FALLO
-   ↓
-4. Message vuelve a la cola (visibility timeout)
-   ↓
-5. Reintento 1, 2, 3... (hasta maxReceiveCount)
-   ↓
-6. Si sigue fallando → DLQ
-   ↓
-7. Alerta para revisión manual
-```
-
-## 📊 SQS Configuration
-
-### Main Queue: notification-queue
-- **Visibility Timeout:** 30 segundos
-- **Message Retention:** 4 días
-- **Max Receive Count:** 3 (después va a DLQ)
-- **Long Polling:** 20 segundos
-
-### Dead Letter Queue: notification-dlq
-- **Message Retention:** 14 días
-- **Purpose:** Almacenar mensajes que fallaron 3+ veces
-- **Action:** Revisión manual y corrección
-
-## 🔑 Conceptos Clave
-
-### 1. Long Polling
-
-Reduce costos y latencia al esperar mensajes:
-
-```python
-# Short polling (❌ ineficiente)
-messages = sqs.receive_message(WaitTimeSeconds=0)  # Retorna inmediatamente
-
-# Long polling (✅ eficiente)
-messages = sqs.receive_message(WaitTimeSeconds=20)  # Espera hasta 20s
-```
-
-### 2. Visibility Timeout
-
-Evita que múltiples consumidores procesen el mismo mensaje:
-
-```python
-# Mensaje se vuelve invisible por 30 segundos
-messages = sqs.receive_message(VisibilityTimeout=30)
-
-# Si no se elimina en 30s, vuelve a estar disponible
-# Esto permite reintentos automáticos
-```
-
-### 3. Batch Processing
-
-Procesa múltiples mensajes a la vez para eficiencia:
-
-```python
-# Recibir hasta 10 mensajes
-messages = sqs.receive_message(MaxNumberOfMessages=10)
-
-# Procesar en batch
-for message in messages:
-    process(message)
-    
-# Eliminar en batch
-sqs.delete_message_batch(messages)
-```
-
-## 📦 Componentes
-
-### Domain Layer
-- **Notification:** Aggregate root
-- **NotificationType:** Enum (BOOKING_CONFIRMED, PAYMENT_PROCESSED, etc.)
-- **EmailTemplate:** Value object con plantillas HTML
-- **Domain Events:** NotificationSent, NotificationFailed
-
-### Application Layer
-- **NotificationProcessor:** Procesa mensajes de SQS
-- **EmailService:** Envía emails (mock)
-- **MessageHandler:** Maneja diferentes tipos de notificaciones
-
-### Infrastructure Layer
-- **SQSConsumer:** Polling de mensajes
-- **MockEmailProvider:** Simula envío de emails
-- **EventBridgeSubscriber:** Suscripción a eventos
-
-## 🚀 Inicio Rápido
-
-### Prerequisitos
-- Python 3.11+ instalado
-- LocalStack corriendo (`docker-compose up -d`)
-- SQS queues configuradas
-
-### Instalación Profesional
-
-```bash
-# 1. Navegar al directorio del servicio
-cd notification-service
-
-# 2. Crear virtual environment
-python -m venv venv
-
-# 3. Activar virtual environment (Git Bash en Windows)
-source venv/Scripts/activate
-
-# 4. Actualizar pip
-pip install --upgrade pip
-
-# 5. Instalar dependencias
-pip install -r requirements.txt
-
-# 6. Copiar configuración
-cp .env.example .env
-```
-
-### Desarrollo
-
-```bash
-# Iniciar consumer (procesa mensajes de SQS)
-python -m src.main
-```
-
-### Tests
-
-```bash
-pytest
-pytest --cov=src  # Con cobertura
-```
-
-## 🧪 Testing (Git Bash)
+Microservicio de notificaciones que usa SQS como cola intermedia para procesar emails de forma asíncrona.
 
 > ⚠️ Todos los comandos son para **Git Bash** en Windows.
+> Abre Git Bash y ubícate en la raíz del proyecto antes de empezar.
+
+---
+
+## ¿Qué hace este servicio?
+
+Recibe mensajes de una cola SQS y **envía notificaciones por email** (simuladas con logs). Es el último eslabón del sistema: cuando un pago se procesa o una reserva se confirma, este servicio notifica al usuario.
+
+```
+SQS Queue
+   │
+   ├── BOOKING_CONFIRMED  → "Tu reserva fue confirmada"
+   ├── BOOKING_CANCELLED  → "Tu reserva fue cancelada"
+   ├── PAYMENT_PROCESSED  → "Tu pago fue procesado"
+   ├── PAYMENT_FAILED     → "Tu pago falló"
+   ├── EVENT_PUBLISHED    → "Nuevo evento disponible"
+   └── EVENT_CANCELLED    → "El evento fue cancelado"
+```
+
+Si un mensaje **falla 3 veces**, pasa automáticamente a la **Dead Letter Queue (DLQ)** para revisión manual — así nunca se pierde un mensaje.
+
+---
+
+## 🚀 Inicio Rápido (paso a paso)
+
+### Prerequisitos
+- Python 3.11+
+- LocalStack corriendo (`docker-compose up -d` en la raíz del proyecto)
+
+---
 
 ### Paso 1 — Iniciar LocalStack
 
@@ -232,90 +40,153 @@ pytest --cov=src  # Con cobertura
 # Desde la raíz del proyecto
 docker-compose up -d
 
-# Verificar SQS
+# Verificar que está healthy
 curl -s http://localhost:4566/_localstack/health | grep sqs
+# Debe mostrar: "sqs": "available"  (o "running")
 ```
 
-### Paso 2 — Crear SQS Queues
+---
+
+### Paso 2 — Crear las colas SQS
+
+> ⚠️ **Solo necesitas hacer esto UNA VEZ.** Los datos persisten en `localstack-data/`.
 
 ```bash
-# Desde notification-service
+# Desde la raíz del proyecto
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 export AWS_DEFAULT_REGION=us-east-1
 
-bash scripts/init-sqs.sh
+bash init-notification-sqs.sh
 ```
 
-### Paso 3 — Crear y activar venv
+> Si ves `QueueAlreadyExists` — está bien ✅, ya fueron creadas antes.
+
+---
+
+### Paso 3 — Instalar dependencias
 
 ```bash
-# Crear virtual environment
+cd notification-service
+
+# Crear entorno virtual (solo la primera vez)
 python -m venv venv
 
-# Activar (Git Bash en Windows)
+# Activar entorno virtual
 source venv/Scripts/activate
+# Verás (venv) al inicio de tu prompt
 
 # Instalar dependencias
 pip install -r requirements.txt
+
+# Copiar configuración
+cp .env.example .env
 ```
 
-### Paso 4 — Iniciar servicio
+---
+
+### Paso 4 — Iniciar el servicio
 
 ```bash
-# Con venv activado
+# Asegúrate de tener (venv) activo en tu prompt
 python -m src.main
 ```
 
-### Paso 5 — Enviar mensaje de prueba
+Cuando veas:
+```
+INFO - Starting Notification Service...
+INFO - Polling for messages from: notification-queue
+```
+El servicio está listo ✅ y escuchando mensajes.
+
+---
+
+### Paso 5 — Enviar un mensaje de prueba
+
+Abre **otra pestaña de Git Bash** (deja el servicio corriendo) y ejecuta:
 
 ```bash
-# En otra terminal Git Bash
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+
+# Enviar notificación de reserva confirmada
 aws --endpoint-url=http://localhost:4566 sqs send-message \
   --queue-url http://localhost:4566/000000000000/notification-queue \
-  --message-body '{"type":"BOOKING_CONFIRMED","email":"user@example.com","bookingId":"123","eventName":"Concert","ticketQuantity":2,"totalPrice":100.0}'
+  --message-body '{"type":"BOOKING_CONFIRMED","email":"user@example.com","bookingId":"booking-123","eventName":"Rock Concert","ticketQuantity":2,"totalPrice":100.0}'
 ```
 
-### Paso 6 — Verificar logs
-
-Deberías ver en los logs del servicio:
-
+En los logs del servicio deberías ver:
 ```
 INFO - [MOCK] Email sent to user@example.com
 Subject: Booking Confirmed - Event Management
 Body preview: Dear Customer, Your booking has been confirmed!...
-INFO - Notification <id> sent successfully
-INFO - Message <id> processed successfully
+INFO - Notification sent successfully
+INFO - Message processed successfully
 ```
 
-## ✅ Estado Actual
+---
 
-- [x] Domain Layer
-- [x] Application Layer
-- [x] Infrastructure Layer
-- [x] SQS Consumer
-- [x] Mock Email Provider
-- [x] Tests unitarios (60+ tests)
-- [x] Script de inicialización (init-sqs.sh)
+### Paso 6 — Correr los tests
+
+```bash
+# Con (venv) activado, desde la carpeta notification-service
+pytest tests/unit/ --no-cov -q
+# Resultado esperado: 47 passed
+```
+
+---
 
 ## 🛠️ Troubleshooting
 
-**Error: "Queue does not exist"**
-- Ejecuta: `bash scripts/init-sqs.sh`
+**Error: `Queue does not exist`**
+- Las colas no fueron creadas: `bash init-notification-sqs.sh`
 
-**Error: "No messages received"**
-- Verifica que EventBridge está publicando eventos
-- Verifica la regla de EventBridge → SQS
+**Error: `ModuleNotFoundError`**
+- El entorno virtual no está activado: `source venv/Scripts/activate`
 
-**Mensajes en DLQ:**
-- Revisa logs para ver el error
-- Corrige el problema
-- Reenvía mensajes desde DLQ a la cola principal
+**Error: `Connection refused` en puerto 4566**
+- LocalStack no está corriendo: `docker-compose up -d`
 
-## 📚 Conceptos Clave
+**No aparecen mensajes procesados:**
+- Verifica que enviaste el mensaje a la URL correcta: `http://localhost:4566/000000000000/notification-queue`
 
-**Buffer Pattern:** Desacoplamiento con cola intermedia
-**Long Polling:** Espera eficiente de mensajes
-**Visibility Timeout:** Previene procesamiento duplicado
-**DLQ:** Manejo de mensajes fallidos
-**Batch Processing:** Procesamiento eficiente en lotes
+**Desactivar el entorno virtual cuando termines:**
+```bash
+deactivate
+```
+
+---
+
+## 🏗️ Arquitectura (resumen)
+
+```
+Otros servicios
+      │
+      └── Publican a SQS ──→ notification-queue
+                                    │
+                          SQSConsumer (polling c/20s)
+                                    │
+                          NotificationProcessor
+                                    │
+                          MockEmailProvider (logs)
+                                    │
+                               ENVIADO ✅
+                     (o DLQ si falla 3 veces ❌)
+```
+
+**Tecnologías:**
+- **FastAPI / asyncio** — event loop para polling continuo
+- **SQS** — cola que absorbe picos de notificaciones (Buffer)
+- **DLQ** — Dead Letter Queue para mensajes que fallan repetidamente
+- **venv** — entorno virtual para aislar las dependencias de Python
+
+---
+
+## ✅ Estado Actual
+
+- ✅ Domain Layer — Notification aggregate, value objects, email templates
+- ✅ Application Layer — NotificationProcessor, MessageHandler
+- ✅ Infrastructure Layer — SQSConsumer, MockEmailProvider
+- ✅ REST API — Health check en puerto 3003
+- ✅ Tests unitarios (47 tests)
