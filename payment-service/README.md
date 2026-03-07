@@ -54,21 +54,10 @@ export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 export AWS_DEFAULT_REGION=us-east-1
 
-aws --endpoint-url=http://localhost:4566 dynamodb create-table \
-  --table-name payment-sagas \
-  --attribute-definitions \
-    AttributeName=PK,AttributeType=S \
-    AttributeName=SK,AttributeType=S \
-    AttributeName=bookingId,AttributeType=S \
-  --key-schema \
-    AttributeName=PK,KeyType=HASH \
-    AttributeName=SK,KeyType=RANGE \
-  --global-secondary-indexes '[{"IndexName":"BookingIdIndex","KeySchema":[{"AttributeName":"bookingId","KeyType":"HASH"}],"Projection":{"ProjectionType":"ALL"},"ProvisionedThroughput":{"ReadCapacityUnits":5,"WriteCapacityUnits":5}}]' \
-  --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
-  --region us-east-1
+bash init-payment-dynamodb.sh
 ```
 
-> Si ves el error `Table already exists` — está bien ✅, ya fue creada antes.
+> Si ves `La tabla 'payment-sagas' ya existe` — está bien ✅, ya fue creada antes.
 
 ---
 
