@@ -22,13 +22,18 @@ import java.time.LocalDateTime;
 public class EventController {
 
     private final CreateEventService createEventService;
+    private final com.eventmanagement.eventservice.application.service.PublishEventService publishEventService;
 
     /**
-     * Constructor Injection - Spring Boot inyecta automáticamente el servicio.
+     * Constructor Injection - Spring Boot inyecta automáticamente los servicios.
      * Es como si el restaurante te asignara automáticamente un chef.
      */
-    public EventController(CreateEventService createEventService) {
+    public EventController(
+        CreateEventService createEventService,
+        com.eventmanagement.eventservice.application.service.PublishEventService publishEventService
+    ) {
         this.createEventService = createEventService;
+        this.publishEventService = publishEventService;
     }
 
     /**
@@ -80,6 +85,36 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * POST /api/v1/events/{id}/publish - Publicar un evento
+     * 
+     * Ejemplo de petición:
+     * POST http://localhost:8080/api/v1/events/123e4567-e89b-12d3-a456-426614174000/publish
+     */
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<EventResponse> publishEvent(@PathVariable String id) {
+        // 1. Convertir String a EventId
+        EventId eventId = new EventId(java.util.UUID.fromString(id));
+        
+        // 2. Llamar al servicio de aplicación
+        Event publishedEvent = publishEventService.execute(eventId);
+        
+        // 3. Convertir el evento del dominio a respuesta HTTP
+        EventResponse response = new EventResponse(
+            publishedEvent.getId().value().toString(),
+            publishedEvent.getName(),
+            publishedEvent.getDescription(),
+            publishedEvent.getType().toString(),
+            publishedEvent.getEventDate().toString(),
+            publishedEvent.getTotalCapacity().value(),
+            publishedEvent.getPrice().amount().toString(),
+            publishedEvent.getStatus().toString()
+        );
+        
+        // 4. Devolver respuesta con código 200 (OK)
+        return ResponseEntity.ok(response);
+    }
+    
     /**
      * GET /api/v1/events/health - Endpoint simple para verificar que funciona
      */

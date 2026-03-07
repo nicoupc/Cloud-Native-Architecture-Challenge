@@ -1,7 +1,11 @@
 package com.eventmanagement.eventservice.infrastructure.config;
 
 import com.eventmanagement.eventservice.application.service.CreateEventService;
+import com.eventmanagement.eventservice.application.service.PublishEventService;
+import com.eventmanagement.eventservice.domain.port.EventPublisher;
 import com.eventmanagement.eventservice.domain.port.EventRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,22 +16,40 @@ import org.springframework.context.annotation.Configuration;
  * - Define qué cables van a qué enchufes
  * - Spring Boot usa esto para saber cómo conectar las piezas
  * 
- * IMPORTANTE: Ya NO necesitamos crear el EventRepository aquí.
- * PostgresEventRepositoryAdapter ya tiene @Component, así que Spring Boot
- * lo detecta automáticamente y lo inyecta donde se necesite.
+ * IMPORTANTE: Ya NO necesitamos crear los repositories aquí.
+ * Los adapters ya tienen @Component, así que Spring Boot
+ * los detecta automáticamente y los inyecta donde se necesiten.
  */
 @Configuration
 public class ApplicationConfig {
 
     /**
-     * Cuando alguien necesite un CreateEventService, Spring Boot:
-     * 1. Ve que necesita un EventRepository
-     * 2. Busca un @Component que implemente EventRepository
-     * 3. Encuentra PostgresEventRepositoryAdapter
-     * 4. Lo inyecta automáticamente
+     * CreateEventService - Use case para crear eventos
      */
     @Bean
     public CreateEventService createEventService(EventRepository eventRepository) {
         return new CreateEventService(eventRepository);
+    }
+    
+    /**
+     * PublishEventService - Use case para publicar eventos
+     */
+    @Bean
+    public PublishEventService publishEventService(
+        EventRepository eventRepository,
+        EventPublisher eventPublisher
+    ) {
+        return new PublishEventService(eventRepository, eventPublisher);
+    }
+    
+    /**
+     * ObjectMapper - Para serializar/deserializar JSON
+     * Configurado con soporte para Java 8 Time API (LocalDateTime, Instant, etc.)
+     */
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        return mapper;
     }
 }
