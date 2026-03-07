@@ -7,7 +7,7 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 
 ## ✅ Fase 1: Event Service (Hexagonal Architecture) - COMPLETADA
 
-### Estado: 70% ✅ (Funcional para el challenge)
+### Estado: 85% ✅ (Funcional para el challenge)
 
 #### ✅ Completado:
 - [x] Configurar LocalStack con Docker Compose
@@ -36,7 +36,7 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 
 ## 🚀 Fase 2: Booking Service (CQRS + Hexagonal) - EN PROGRESO
 
-### Estado: 0% ⏳
+### Estado: 30% ⏳
 
 ### Objetivos de Aprendizaje:
 - [ ] Implementar CQRS (Command Query Responsibility Segregation)
@@ -47,32 +47,32 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 
 ### Plan de Implementación:
 
-#### Paso 1: Setup del Proyecto (30 min)
-- [ ] Crear estructura de carpetas para Booking Service (TypeScript/Node.js)
-- [ ] Configurar package.json con dependencias
-- [ ] Configurar TypeScript (tsconfig.json)
-- [ ] Crear estructura Hexagonal (domain, application, infrastructure)
+#### Paso 1: Setup del Proyecto (30 min) ✅
+- [x] Crear estructura de carpetas para Booking Service (TypeScript/Node.js)
+- [x] Configurar package.json con dependencias
+- [x] Configurar TypeScript (tsconfig.json)
+- [x] Crear estructura Hexagonal (domain, application, infrastructure)
 
-#### Paso 2: Domain Layer (1-2 horas)
-- [ ] Implementar Value Objects:
-  - [ ] BookingId
-  - [ ] UserId
-  - [ ] EventId
-  - [ ] BookingStatus (PENDING, CONFIRMED, CANCELLED)
-  - [ ] TicketQuantity
-  - [ ] TotalPrice
-- [ ] Implementar Booking Aggregate:
-  - [ ] Booking.create() (factory method)
-  - [ ] Booking.confirm() (state transition)
-  - [ ] Booking.cancel() (state transition)
-- [ ] Implementar Domain Events:
-  - [ ] BookingCreated
-  - [ ] BookingConfirmed
-  - [ ] BookingCancelled
-- [ ] Definir Ports:
-  - [ ] BookingRepository (write)
-  - [ ] BookingQueryRepository (read)
-  - [ ] EventPublisher
+#### Paso 2: Domain Layer (1-2 horas) ✅
+- [x] Implementar Value Objects:
+  - [x] BookingId
+  - [x] UserId
+  - [x] EventId
+  - [x] BookingStatus (PENDING, CONFIRMED, CANCELLED)
+  - [x] TicketQuantity
+  - [x] TotalPrice
+- [x] Implementar Booking Aggregate:
+  - [x] Booking.create() (factory method)
+  - [x] Booking.confirm() (state transition)
+  - [x] Booking.cancel() (state transition)
+- [x] Implementar Domain Events:
+  - [x] BookingCreated
+  - [x] BookingConfirmed
+  - [x] BookingCancelled
+- [x] Definir Ports:
+  - [x] BookingRepository (write)
+  - [x] BookingQueryRepository (read)
+  - [x] EventPublisher
 
 #### Paso 3: Application Layer - CQRS (2-3 horas)
 - [ ] Commands (Write Side):
@@ -178,13 +178,13 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 ## 📈 Progreso General
 
 ```
-Event Service:        ████████████████░░░░  70%
+Event Service:        █████████████████░░░  85%
 Booking Service:      ░░░░░░░░░░░░░░░░░░░░   0%
 Payment Service:      ░░░░░░░░░░░░░░░░░░░░   0%
 Notification Service: ░░░░░░░░░░░░░░░░░░░░   0%
 Integration:          ░░░░░░░░░░░░░░░░░░░░   0%
 -------------------------------------------
-TOTAL:                ███░░░░░░░░░░░░░░░░░  14%
+TOTAL:                ████░░░░░░░░░░░░░░░░  17%
 ```
 
 ---
