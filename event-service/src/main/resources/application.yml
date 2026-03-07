@@ -1,0 +1,15 @@
+# Configuración de Spring Boot
+# Esto es como el "manual de instrucciones" para Spring Boot
+
+server:
+  port: 8080  # Puerto donde corre el servidor
+
+spring:
+  application:
+    name: event-service  # Nombre del servicio
+
+# Logging - Para ver qué está pasando
+logging:
+  level:
+    com.eventmanagement: DEBUG  # Muestra logs detallados de nuestro código
+    org.springframework: INFO   # Logs normales de Spring Boot
