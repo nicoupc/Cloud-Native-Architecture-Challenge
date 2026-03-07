@@ -9,7 +9,7 @@ The orchestrator is responsible for:
 """
 
 import logging
-from typing import Optional
+from typing import Optional, List
 from uuid import uuid4
 from datetime import datetime
 
@@ -455,3 +455,20 @@ class SagaOrchestrator:
             Saga if found
         """
         return await self.saga_repository.find_by_booking_id(booking_id)
+
+    async def list_sagas(
+        self,
+        limit: int = 100,
+        last_key: Optional[str] = None
+    ) -> tuple[List[PaymentSaga], Optional[str]]:
+        """
+        List all sagas with pagination
+        
+        Args:
+            limit: Maximum number of sagas to return
+            last_key: Pagination token
+            
+        Returns:
+            Tuple of (sagas, next_page_token)
+        """
+        return await self.saga_repository.find_all(limit, last_key)
