@@ -2,6 +2,7 @@
 Tests for PaymentSaga Aggregate Root
 """
 
+import time
 import pytest
 from src.domain.payment_saga import PaymentSaga
 from src.domain.saga_state import SagaState
@@ -92,6 +93,7 @@ class TestPaymentSagaStateTransitions:
         )
         
         original_updated_at = saga.updated_at
+        time.sleep(0.001)  # ensure timestamp difference is detectable
         saga.transition_to(SagaState.BOOKING_RESERVED)
         
         assert saga.updated_at > original_updated_at
