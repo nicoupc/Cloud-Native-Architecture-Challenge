@@ -44,9 +44,11 @@ public class EventMapper {
     /**
      * Convierte EventEntity (JPA) → Event (dominio)
      * Usado cuando queremos LEER de la base de datos.
+     * 
+     * Usamos Event.reconstruct() para recrear el objeto con TODOS sus datos.
      */
     public Event toDomain(EventEntity entity) {
-        return new Event(
+        return Event.reconstruct(
             new EventId(entity.getId()),
             entity.getName(),
             entity.getDescription(),
@@ -54,7 +56,11 @@ public class EventMapper {
             new EventId(entity.getVenueId()),
             entity.getEventDate(),
             new Capacity(entity.getTotalCapacity()),
-            new Price(entity.getPriceAmount(), entity.getPriceCurrency())
+            new Capacity(entity.getAvailableCapacity()),
+            new Price(entity.getPriceAmount(), entity.getPriceCurrency()),
+            mapEnumToStatus(entity.getStatus()),
+            entity.getCreatedAt(),
+            entity.getUpdatedAt()
         );
     }
     

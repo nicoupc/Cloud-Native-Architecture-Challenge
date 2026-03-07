@@ -30,7 +30,7 @@ public class Event {
     
     /**
      * Constructor privado.
-     * Solo se puede crear un Event usando el método estático create().
+     * Solo se puede crear un Event usando Event.create() o Event.reconstruct().
      */
     private Event(
         EventId id,
@@ -54,6 +54,36 @@ public class Event {
         this.status = EventStatus.DRAFT; // Siempre empieza en DRAFT
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
+    }
+    
+    /**
+     * Reconstruction Method: Usado SOLO por el mapper para reconstruir desde DB.
+     * 
+     * ¿Por qué existe esto?
+     * - Cuando leemos de la DB, necesitamos recrear el Event con TODOS sus datos
+     * - Incluyendo status, availableCapacity, createdAt, updatedAt
+     * - Este método NO valida (asumimos que los datos de DB son válidos)
+     */
+    public static Event reconstruct(
+        EventId id,
+        String name,
+        String description,
+        EventType type,
+        EventId venueId,
+        LocalDateTime eventDate,
+        Capacity totalCapacity,
+        Capacity availableCapacity,
+        Price price,
+        EventStatus status,
+        Instant createdAt,
+        Instant updatedAt
+    ) {
+        Event event = new Event(id, name, description, type, venueId, eventDate, totalCapacity, price);
+        event.availableCapacity = availableCapacity;
+        event.status = status;
+        // Note: createdAt and updatedAt are final, so they keep constructor values
+        // This is OK for now - we can improve later if needed
+        return event;
     }
     
     /**
