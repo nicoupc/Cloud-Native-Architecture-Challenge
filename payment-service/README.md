@@ -199,22 +199,89 @@ saga_repository.save(saga)
 ## 🚀 Inicio Rápido
 
 ### Prerequisitos
-- Python 3.11+
-- LocalStack corriendo
-- Booking Service corriendo
+- Python 3.11+ instalado
+- LocalStack corriendo (`docker-compose up -d`)
+- Booking Service corriendo (puerto 3001)
 - DynamoDB configurado
 
-### Instalación
+### Instalación Profesional
 
 ```bash
+# 1. Navegar al directorio del servicio
 cd payment-service
+
+# 2. Crear virtual environment (aislamiento de dependencias)
+python -m venv venv
+
+# 3. Activar virtual environment (Git Bash en Windows)
+source venv/Scripts/activate
+
+# 4. Verificar que estás en el virtual environment
+# Deberías ver (venv) en tu prompt
+which python  # Debe apuntar a venv/Scripts/python
+
+# 5. Actualizar pip (buena práctica)
+pip install --upgrade pip
+
+# 6. Instalar dependencias con versiones específicas
 pip install -r requirements.txt
+
+# 7. Copiar configuración de ejemplo
+cp .env.example .env
+
+# 8. Editar .env si es necesario (opcional para desarrollo local)
+# nano .env
+```
+
+### Verificar Instalación
+
+```bash
+# Verificar que FastAPI está instalado
+python -c "import fastapi; print(fastapi.__version__)"
+
+# Verificar que boto3 está instalado
+python -c "import boto3; print(boto3.__version__)"
+
+# Listar todas las dependencias instaladas
+pip list
 ```
 
 ### Desarrollo
 
 ```bash
-uvicorn main:app --reload --port 3002
+# Asegúrate de tener el virtual environment activado (ver (venv) en prompt)
+uvicorn src.main:app --reload --port 3002 --host 0.0.0.0
+
+# O usando Python directamente
+python -m src.main
+```
+
+### Desactivar Virtual Environment
+
+```bash
+# Cuando termines de trabajar
+deactivate
+```
+
+### Estructura del Proyecto
+
+```
+payment-service/
+├── venv/                    # Virtual environment (NO commitear)
+├── src/
+│   ├── domain/              # Lógica de negocio pura
+│   ├── application/         # Casos de uso
+│   └── infrastructure/      # Adaptadores externos
+├── tests/
+│   ├── unit/                # Tests unitarios (rápidos)
+│   └── integration/         # Tests de integración (LocalStack)
+├── .env                     # Variables de entorno (NO commitear)
+├── .env.example             # Plantilla de configuración
+├── .gitignore               # Archivos a ignorar en git
+├── requirements.txt         # Dependencias con versiones
+├── pytest.ini               # Configuración de tests
+├── README.md                # Esta documentación
+└── main.py                  # Punto de entrada
 ```
 
 ### Tests
@@ -276,6 +343,19 @@ curl http://localhost:3002/api/v1/payments/saga/{sagaId}
 
 ## 📝 Notas de Diseño
 
+### ¿Por qué Virtual Environment?
+
+**Problema sin venv:**
+- Dependencias se instalan globalmente
+- Conflictos entre proyectos (Proyecto A usa FastAPI 0.100, Proyecto B usa 0.109)
+- Difícil reproducir entorno en otro equipo
+
+**Solución con venv:**
+- ✅ Aislamiento completo de dependencias
+- ✅ Cada proyecto tiene sus propias versiones
+- ✅ Fácil de reproducir (requirements.txt)
+- ✅ No contamina Python global
+
 ### ¿Por qué DynamoDB para Saga State?
 
 - **Transacciones locales:** Cada actualización de estado es atómica
@@ -290,6 +370,36 @@ Para este proyecto educativo, simulamos el payment gateway. En producción:
 - Webhooks para confirmación asíncrona
 - Manejo de 3D Secure, PCI compliance
 - Reintentos y circuit breakers
+
+### Buenas Prácticas Implementadas
+
+**Gestión de Dependencias:**
+- ✅ Virtual environment (venv)
+- ✅ requirements.txt con versiones específicas
+- ✅ .gitignore para no commitear venv/
+
+**Configuración:**
+- ✅ .env para variables de entorno
+- ✅ .env.example como documentación
+- ✅ python-dotenv para cargar variables
+
+**Testing:**
+- ✅ pytest con configuración profesional
+- ✅ Cobertura mínima del 70%
+- ✅ Tests separados (unit, integration)
+- ✅ Markers para categorizar tests
+
+**Código Limpio:**
+- ✅ Black para formateo automático
+- ✅ Flake8 para linting
+- ✅ MyPy para type checking
+- ✅ Isort para ordenar imports
+
+**Arquitectura:**
+- ✅ Hexagonal Architecture (Ports & Adapters)
+- ✅ Separación clara de capas
+- ✅ Domain-Driven Design
+- ✅ SOLID principles
 
 ### Manejo de Errores
 

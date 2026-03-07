@@ -113,15 +113,60 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 
 #### Paso 1: Setup del Proyecto (30-45 min) ⏳
 - [ ] Crear estructura de carpetas para Payment Service (Python/FastAPI)
-- [ ] Configurar pyproject.toml o requirements.txt con dependencias
-- [ ] Configurar estructura de proyecto (domain, application, infrastructure)
+- [ ] Crear y activar virtual environment (venv)
+- [ ] Configurar requirements.txt con dependencias
+- [ ] Configurar pyproject.toml (opcional, para gestión moderna)
+- [ ] Crear .gitignore para Python (venv/, __pycache__, .pytest_cache, etc.)
+- [ ] Configurar estructura de proyecto (src/domain, src/application, src/infrastructure)
 - [ ] Setup de pytest para testing
+- [ ] Crear README.md con instrucciones de setup
 
 **Dependencias principales:**
 - FastAPI (REST API)
+- uvicorn (ASGI server)
 - boto3 (AWS SDK para DynamoDB, EventBridge, SQS)
 - pydantic (validación de datos)
 - pytest (testing)
+- pytest-cov (cobertura de tests)
+- httpx (HTTP client para testing)
+- python-dotenv (variables de entorno)
+
+**Estructura de carpetas:**
+```
+payment-service/
+├── venv/                    # Virtual environment (no commitear)
+├── src/
+│   ├── __init__.py
+│   ├── domain/
+│   │   ├── __init__.py
+│   │   ├── saga/
+│   │   └── compensation/
+│   ├── application/
+│   │   └── __init__.py
+│   └── infrastructure/
+│       ├── __init__.py
+│       ├── persistence/
+│       ├── messaging/
+│       └── api/
+├── tests/
+│   ├── __init__.py
+│   ├── unit/
+│   └── integration/
+├── .env.example
+├── .gitignore
+├── requirements.txt
+├── pytest.ini
+├── README.md
+└── main.py
+```
+
+**Buenas prácticas incluidas:**
+- ✅ Virtual environment para aislamiento de dependencias
+- ✅ .gitignore para no commitear archivos innecesarios
+- ✅ .env.example para documentar variables de entorno
+- ✅ Estructura clara de carpetas (domain, application, infrastructure)
+- ✅ Tests separados por tipo (unit, integration)
+- ✅ requirements.txt con versiones específicas
 
 #### Paso 2: Domain Layer - Saga State Machine (2-3 horas) ⏳
 - [ ] Definir estados de la Saga:
