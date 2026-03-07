@@ -167,245 +167,165 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 - [ ] Integración end-to-end con Booking Service
 - [ ] Métricas y observabilidad
 
+---
+
+## ⏳ Fase 4: Notification Service (Buffer Pattern) - EN PROGRESO
+
+### Estado: 5% ⏳
+
+### Objetivos de Aprendizaje:
+- [ ] Implementar Buffer Pattern con SQS
+- [ ] Long polling para consumo eficiente de mensajes
+- [ ] Configurar Dead Letter Queue (DLQ) para mensajes fallidos
+- [ ] Batch processing de notificaciones
+- [ ] Mock email provider para simulación
+- [ ] Manejo de reintentos y visibility timeout
+
 ### Plan de Implementación:
 
-#### Paso 1: Setup del Proyecto (30-45 min) ⏳
-- [ ] Crear estructura de carpetas para Payment Service (Python/FastAPI)
-- [ ] Crear y activar virtual environment (venv)
-- [ ] Configurar requirements.txt con dependencias
-- [ ] Configurar pyproject.toml (opcional, para gestión moderna)
-- [ ] Crear .gitignore para Python (venv/, __pycache__, .pytest_cache, etc.)
-- [ ] Configurar estructura de proyecto (src/domain, src/application, src/infrastructure)
-- [ ] Setup de pytest para testing
-- [ ] Crear README.md con instrucciones de setup
+#### Paso 1: Setup del Proyecto (30 min) ✅
+- [x] Crear estructura de carpetas (domain, application, infrastructure)
+- [x] Configurar requirements.txt con dependencias
+- [x] Crear .gitignore para Python
+- [x] Configurar pytest para testing
+- [x] Crear README.md con Buffer Pattern explicado
+- [x] .env.example con configuración de SQS
 
-**Dependencias principales:**
-- FastAPI (REST API)
-- uvicorn (ASGI server)
-- boto3 (AWS SDK para DynamoDB, EventBridge, SQS)
-- pydantic (validación de datos)
-- pytest (testing)
-- pytest-cov (cobertura de tests)
-- httpx (HTTP client para testing)
-- python-dotenv (variables de entorno)
-
-**Estructura de carpetas:**
-```
-payment-service/
-├── venv/                    # Virtual environment (no commitear)
-├── src/
-│   ├── __init__.py
-│   ├── domain/
-│   │   ├── __init__.py
-│   │   ├── saga/
-│   │   └── compensation/
-│   ├── application/
-│   │   └── __init__.py
-│   └── infrastructure/
-│       ├── __init__.py
-│       ├── persistence/
-│       ├── messaging/
-│       └── api/
-├── tests/
-│   ├── __init__.py
-│   ├── unit/
-│   └── integration/
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── pytest.ini
-├── README.md
-└── main.py
-```
-
-**Buenas prácticas incluidas:**
-- ✅ Virtual environment para aislamiento de dependencias
-- ✅ .gitignore para no commitear archivos innecesarios
-- ✅ .env.example para documentar variables de entorno
-- ✅ Estructura clara de carpetas (domain, application, infrastructure)
-- ✅ Tests separados por tipo (unit, integration)
-- ✅ requirements.txt con versiones específicas
-
-#### Paso 2: Domain Layer - Saga State Machine (2-3 horas) ⏳
-- [ ] Definir estados de la Saga:
-  - [ ] SagaState enum: STARTED, BOOKING_RESERVED, PAYMENT_PROCESSED, BOOKING_CONFIRMED, COMPLETED, FAILED, COMPENSATING, COMPENSATED
-- [ ] Implementar Saga Aggregate:
-  - [ ] PaymentSaga (aggregate root)
-  - [ ] SagaId (value object)
-  - [ ] SagaStep (value object para cada paso)
-- [ ] Definir transiciones válidas entre estados
-- [ ] Implementar lógica de compensación:
-  - [ ] CompensationHandler interface
-  - [ ] ReleaseBookingCompensation
-  - [ ] RefundPaymentCompensation
-
-**Conceptos clave:**
-- State Machine: Controla flujo y transiciones
-- Compensation: Rollback distribuido
-- Idempotencia: Cada paso puede ejecutarse múltiples veces
-
-#### Paso 3: Domain Layer - Commands y Events (1-2 horas) ⏳
-- [ ] Commands:
-  - [ ] StartPaymentSagaCommand
-  - [ ] ProcessPaymentCommand
-  - [ ] ConfirmBookingCommand
-  - [ ] CompensateSagaCommand
+#### Paso 2: Domain Layer (1-2 horas) ⏳
+- [ ] Notification Aggregate:
+  - [ ] NotificationId (value object)
+  - [ ] NotificationType enum (BOOKING_CONFIRMED, PAYMENT_PROCESSED, etc.)
+  - [ ] Notification aggregate con estado
+- [ ] Email Templates:
+  - [ ] BookingConfirmedTemplate
+  - [ ] PaymentProcessedTemplate
+  - [ ] PaymentFailedTemplate
 - [ ] Domain Events:
-  - [ ] SagaStarted
-  - [ ] PaymentProcessed
-  - [ ] PaymentFailed
-  - [ ] SagaCompleted
-  - [ ] SagaCompensated
-- [ ] Ports (interfaces):
-  - [ ] SagaRepository (persistencia)
-  - [ ] PaymentGateway (mock)
-  - [ ] BookingServiceClient (HTTP client)
-  - [ ] EventPublisher
+  - [ ] NotificationSent
+  - [ ] NotificationFailed
+- [ ] Ports:
+  - [ ] EmailProvider (interface)
+  - [ ] NotificationRepository (opcional, para tracking)
 
-#### Paso 4: Application Layer - Saga Orchestrator (2-3 horas) ⏳
-- [ ] Implementar SagaOrchestrator:
-  - [ ] startSaga(): Inicia flujo de pago
-  - [ ] executeStep(): Ejecuta paso individual
-  - [ ] compensate(): Ejecuta rollback
-  - [ ] handleStepSuccess(): Transición a siguiente paso
-  - [ ] handleStepFailure(): Inicia compensación
-- [ ] Implementar Step Handlers:
-  - [ ] ReserveBookingStepHandler
-  - [ ] ProcessPaymentStepHandler
-  - [ ] ConfirmBookingStepHandler
-  - [ ] SendNotificationStepHandler
+#### Paso 3: Application Layer (1-2 horas) ⏳
+- [ ] NotificationProcessor:
+  - [ ] processMessage(): Procesa mensaje de SQS
+  - [ ] sendEmail(): Envía email usando provider
+  - [ ] handleFailure(): Maneja fallos y reintentos
+- [ ] MessageHandler:
+  - [ ] Parsea diferentes tipos de mensajes
+  - [ ] Valida estructura de mensajes
+  - [ ] Extrae datos para templates
 
-**Flujo de orquestación:**
-```
-START → Reserve Booking → Process Payment → Confirm Booking → Send Notification → COMPLETED
-         ↓ (fail)           ↓ (fail)          ↓ (fail)
-         COMPENSATE ← COMPENSATE ← COMPENSATE
-```
+#### Paso 4: Infrastructure - SQS Consumer (2-3 horas) ⏳
+- [ ] SQSConsumer:
+  - [ ] Long polling (WaitTimeSeconds=20)
+  - [ ] Batch receive (MaxNumberOfMessages=10)
+  - [ ] Visibility timeout management
+  - [ ] Delete messages after processing
+  - [ ] Error handling y logging
+- [ ] Message Parser:
+  - [ ] Parse EventBridge events
+  - [ ] Extract notification data
+  - [ ] Validate message structure
 
-#### Paso 5: Infrastructure - DynamoDB Adapter (1-2 horas) ⏳
-- [ ] Configurar tabla de Sagas en DynamoDB:
-  - [ ] PK: SAGA#{sagaId}
-  - [ ] SK: SAGA#{sagaId}
-  - [ ] Attributes: sagaId, status, currentStep, steps[], createdAt, updatedAt
-- [ ] Implementar DynamoDBSagaRepository:
-  - [ ] save(saga): Persiste estado
-  - [ ] findById(sagaId): Recupera saga
-  - [ ] updateStatus(sagaId, status): Actualiza estado
-- [ ] Implementar SagaMapper (domain ↔ DynamoDB)
+#### Paso 5: Infrastructure - Mock Email Provider (1 hora) ⏳
+- [ ] MockEmailProvider:
+  - [ ] sendEmail(): Simula envío (logs)
+  - [ ] Configurable success rate
+  - [ ] Delay simulation
+  - [ ] Email tracking (in-memory)
 
-#### Paso 6: Infrastructure - External Adapters (2-3 horas) ⏳
-- [ ] Mock Payment Gateway:
-  - [ ] MockPaymentGateway class
-  - [ ] processPayment(): Simula procesamiento (80% éxito, 20% fallo)
-  - [ ] refundPayment(): Simula reembolso
-- [ ] Booking Service HTTP Client:
-  - [ ] BookingServiceClient class
-  - [ ] confirmBooking(bookingId): Llama a Booking Service
-  - [ ] cancelBooking(bookingId): Llama a Booking Service
-- [ ] EventBridge Publisher:
-  - [ ] EventBridgePublisher class
-  - [ ] publish(event): Publica eventos de saga
+#### Paso 6: Infrastructure - SQS Setup Script (30 min) ⏳
+- [ ] init-sqs.sh:
+  - [ ] Crear notification-queue
+  - [ ] Crear notification-dlq
+  - [ ] Configurar redrive policy (maxReceiveCount=3)
+  - [ ] Configurar visibility timeout
+  - [ ] Configurar message retention
 
-#### Paso 7: Infrastructure - Event Consumer (1-2 horas) ⏳
-- [ ] Configurar SQS Queue para BookingCreated events
-- [ ] Implementar EventBridge Rule: BookingCreated → SQS
-- [ ] Implementar SQS Consumer:
-  - [ ] Escucha BookingCreated events
-  - [ ] Inicia PaymentSaga automáticamente
-  - [ ] Maneja reintentos y DLQ
+#### Paso 7: Infrastructure - EventBridge Integration (1 hora) ⏳
+- [ ] EventBridge Rules:
+  - [ ] Rule: BookingConfirmed → SQS
+  - [ ] Rule: PaymentProcessed → SQS
+  - [ ] Rule: PaymentFailed → SQS
+- [ ] Script para crear rules
 
-#### Paso 8: Infrastructure - REST API (1-2 horas) ⏳
-- [ ] Implementar FastAPI endpoints:
-  - [ ] POST /api/v1/payments/saga/start (iniciar saga manualmente)
-  - [ ] GET /api/v1/payments/saga/{sagaId} (consultar estado)
-  - [ ] POST /api/v1/payments/saga/{sagaId}/compensate (forzar compensación)
-- [ ] DTOs:
-  - [ ] StartSagaRequest
-  - [ ] SagaResponse
-- [ ] Error handling y validación
+#### Paso 8: Main Application (1 hora) ⏳
+- [ ] Consumer Loop:
+  - [ ] Infinite loop con long polling
+  - [ ] Graceful shutdown (SIGTERM)
+  - [ ] Health check endpoint (opcional)
+  - [ ] Metrics logging
 
 #### Paso 9: Testing (2-3 horas) ⏳
-- [ ] Tests unitarios del dominio:
-  - [ ] PaymentSaga state transitions
-  - [ ] Compensation logic
-  - [ ] SagaOrchestrator
-- [ ] Tests de integración:
-  - [ ] Happy path: Saga completa exitosamente
-  - [ ] Failure path: Payment falla, compensación ejecutada
-  - [ ] Idempotencia: Reintentos no causan duplicados
-- [ ] Mocks para servicios externos
+- [ ] Unit Tests:
+  - [ ] Notification domain tests
+  - [ ] Email template tests
+  - [ ] Message parser tests
+- [ ] Integration Tests:
+  - [ ] SQS consumer tests con LocalStack
+  - [ ] End-to-end message flow
+  - [ ] DLQ behavior tests
 
-#### Paso 10: Integración con Booking Service (1 hora) ⏳
+#### Paso 10: Integration Testing (1 hora) ⏳
 - [ ] Probar flujo completo:
-  - [ ] Crear booking en Booking Service
-  - [ ] Payment Service escucha BookingCreated
-  - [ ] Saga se ejecuta automáticamente
-  - [ ] Booking se confirma o cancela según resultado
-- [ ] Verificar datos en DynamoDB (saga state)
-- [ ] Verificar eventos en EventBridge
+  - [ ] Publicar evento a EventBridge
+  - [ ] Verificar mensaje en SQS
+  - [ ] Consumer procesa mensaje
+  - [ ] Email "enviado" (logged)
+  - [ ] Mensaje eliminado de cola
 
 ### 📚 Conceptos Clave a Aprender:
 
-**Saga Pattern:**
-- Transacciones distribuidas sin 2PC (Two-Phase Commit)
-- Cada paso es una transacción local
-- Compensación en lugar de rollback tradicional
+**Buffer Pattern:**
+- Desacoplamiento entre productores y consumidores
+- Cola intermedia para absorber picos de carga
+- Procesamiento asíncrono
 
-**Orchestration vs Choreography:**
-- Orchestration: Coordinador central (Payment Service)
-- Choreography: Servicios reaccionan a eventos (más complejo)
+**Long Polling:**
+- Reduce llamadas a SQS (costo)
+- Reduce latencia vs short polling
+- WaitTimeSeconds hasta 20 segundos
 
-**State Machine:**
-- Estados bien definidos
-- Transiciones controladas
-- Persistencia de estado para recuperación
+**Visibility Timeout:**
+- Previene procesamiento duplicado
+- Mensaje invisible mientras se procesa
+- Vuelve a estar disponible si no se elimina
 
-**Idempotencia:**
-- Cada operación puede ejecutarse múltiples veces
-- Mismo resultado sin efectos secundarios
-- Crítico para reintentos
+**Dead Letter Queue:**
+- Almacena mensajes que fallan repetidamente
+- Permite análisis y corrección manual
+- Previene pérdida de mensajes
 
-**Compensation:**
-- Rollback semántico (no técnico)
-- Orden inverso de ejecución
-- Puede fallar (requiere manejo)
+**Batch Processing:**
+- Procesa múltiples mensajes a la vez
+- Más eficiente que uno por uno
+- Reduce llamadas a SQS
 
 ### 🎯 Criterios de Éxito:
 
-- [ ] Saga completa flujo happy path correctamente
-- [ ] Compensación funciona cuando payment falla
-- [ ] Estado de saga persiste en DynamoDB
-- [ ] Eventos se publican a EventBridge
+- [ ] Consumer procesa mensajes de SQS correctamente
+- [ ] Long polling funciona (espera hasta 20s)
+- [ ] Mensajes fallidos van a DLQ después de 3 intentos
+- [ ] Mock email provider simula envíos
 - [ ] Tests unitarios >70% cobertura
-- [ ] Integración con Booking Service funciona
+- [ ] Integración con EventBridge funciona
 - [ ] Código sigue principios SOLID
 - [ ] Commits siguen Conventional Commits
 
-### 📊 Tiempo Estimado Total: 12-18 horas (1-2 semanas)
+### 📊 Tiempo Estimado Total: 8-12 horas (1 semana)
 
----
-
-## ⏳ Fase 4: Notification Service (Buffer Pattern) - PENDIENTE
+---## ⏳ Fase 5: Integración Final - PENDIENTE
 
 ### Estado: 0% ⏳
 
 ### Objetivos:
-- [ ] Implementar Buffer Pattern con SQS
-- [ ] Configurar Lambda para polling
-- [ ] Agregar DLQ para mensajes fallidos
-- [ ] Batch processing
-
----
-
-## ⏳ Fase 5: Integración Final - PENDIENTE
-
-### Estado: 0% ⏳
-
-### Objetivos:
-- [ ] Conectar todos los servicios
-- [ ] Flujo end-to-end completo
-- [ ] Observabilidad con CloudWatch
-- [ ] Documentación final
+- [ ] Conectar todos los servicios end-to-end
+- [ ] Flujo completo: Event → Booking → Payment → Notification
+- [ ] Probar happy path y failure paths
+- [ ] Observabilidad con CloudWatch (opcional)
+- [ ] Documentación final del proyecto
 
 ---
 
