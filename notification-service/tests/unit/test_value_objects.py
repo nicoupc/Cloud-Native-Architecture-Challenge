@@ -93,7 +93,7 @@ class TestTemplateData:
     
     def test_get_missing_key_returns_default(self):
         data = TemplateData({})
-        assert data.get("missing", "default") is "default"
+        assert data.get("missing", "default") == "default"
     
     def test_dict_like_access(self):
         data = TemplateData({"key": "value"})

@@ -174,6 +174,37 @@ Event Management Team
         return EmailBody(body.strip())
 
 
+class EventCancelledTemplate(EmailTemplate):
+    """Template for event cancelled emails"""
+
+    @staticmethod
+    def render_subject(template_data: TemplateData) -> EmailSubject:
+        event_name = template_data.get("eventName", "Event")
+        return EmailSubject(f"Event Cancelled: {event_name}")
+
+    @staticmethod
+    def render_body(template_data: TemplateData) -> EmailBody:
+        event_name = template_data.get("eventName", "Event")
+        reason = template_data.get("reason", "No reason provided")
+
+        body = f"""
+Dear Customer,
+
+We regret to inform you that the following event has been cancelled.
+
+Event: {event_name}
+Reason: {reason}
+
+If you have an existing booking, it will be automatically cancelled and refunded.
+
+We apologize for the inconvenience.
+
+Best regards,
+Event Management Team
+"""
+        return EmailBody(body.strip())
+
+
 class TemplateFactory:
     """Factory to get appropriate template for notification type"""
     
@@ -183,6 +214,7 @@ class TemplateFactory:
         NotificationType.PAYMENT_PROCESSED: PaymentProcessedTemplate,
         NotificationType.PAYMENT_FAILED: PaymentFailedTemplate,
         NotificationType.EVENT_PUBLISHED: EventPublishedTemplate,
+        NotificationType.EVENT_CANCELLED: EventCancelledTemplate,
     }
     
     @classmethod

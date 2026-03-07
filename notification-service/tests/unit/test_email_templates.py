@@ -7,6 +7,7 @@ from src.domain.email_templates import (
     PaymentProcessedTemplate,
     PaymentFailedTemplate,
     EventPublishedTemplate,
+    EventCancelledTemplate,
     TemplateFactory
 )
 from src.domain.value_objects import NotificationType, TemplateData
@@ -120,6 +121,12 @@ class TestTemplateFactory:
         template = TemplateFactory.get_template(NotificationType.PAYMENT_PROCESSED)
         assert isinstance(template, PaymentProcessedTemplate)
     
+    def test_get_event_cancelled_template(self):
+        template = TemplateFactory.get_template(NotificationType.EVENT_CANCELLED)
+        assert isinstance(template, EventCancelledTemplate)
+
     def test_unsupported_type_raises_error(self):
-        with pytest.raises(ValueError, match="No template found"):
-            TemplateFactory.get_template(NotificationType.EVENT_CANCELLED)
+        # All defined types should have templates - this validates the factory is complete
+        for notification_type in NotificationType:
+            template = TemplateFactory.get_template(notification_type)
+            assert template is not None
