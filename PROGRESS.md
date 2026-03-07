@@ -171,150 +171,70 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 
 ## ⏳ Fase 4: Notification Service (Buffer Pattern) - EN PROGRESO
 
-### Estado: 5% ⏳
+### Estado: 80% ⏳
 
 ### Objetivos de Aprendizaje:
-- [ ] Implementar Buffer Pattern con SQS
-- [ ] Long polling para consumo eficiente de mensajes
-- [ ] Configurar Dead Letter Queue (DLQ) para mensajes fallidos
-- [ ] Batch processing de notificaciones
-- [ ] Mock email provider para simulación
-- [ ] Manejo de reintentos y visibility timeout
+- [x] Implementar Buffer Pattern con SQS
+- [x] Long polling para consumo eficiente de mensajes
+- [x] Configurar Dead Letter Queue (DLQ) para mensajes fallidos
+- [x] Batch processing de notificaciones
+- [x] Mock email provider para simulación
+- [x] Manejo de reintentos y visibility timeout
 
-### Plan de Implementación:
+### Implementación Completada:
 
-#### Paso 1: Setup del Proyecto (30 min) ✅
-- [x] Crear estructura de carpetas (domain, application, infrastructure)
-- [x] Configurar requirements.txt con dependencias
-- [x] Crear .gitignore para Python
-- [x] Configurar pytest para testing
-- [x] Crear README.md con Buffer Pattern explicado
-- [x] .env.example con configuración de SQS
+#### ✅ Domain Layer (100%)
+- [x] Value Objects: NotificationId, EmailAddress, EmailSubject, EmailBody, TemplateData
+- [x] Notification Aggregate con state management
+- [x] 5 Email Templates (BookingConfirmed, PaymentProcessed, etc.)
+- [x] Domain Events: NotificationSent, NotificationFailed
+- [x] Ports: EmailProvider, NotificationRepository
+- [x] 60+ unit tests para domain layer
 
-#### Paso 2: Domain Layer (1-2 horas) ⏳
-- [ ] Notification Aggregate:
-  - [ ] NotificationId (value object)
-  - [ ] NotificationType enum (BOOKING_CONFIRMED, PAYMENT_PROCESSED, etc.)
-  - [ ] Notification aggregate con estado
-- [ ] Email Templates:
-  - [ ] BookingConfirmedTemplate
-  - [ ] PaymentProcessedTemplate
-  - [ ] PaymentFailedTemplate
-- [ ] Domain Events:
-  - [ ] NotificationSent
-  - [ ] NotificationFailed
-- [ ] Ports:
-  - [ ] EmailProvider (interface)
-  - [ ] NotificationRepository (opcional, para tracking)
+#### ✅ Application Layer (100%)
+- [x] NotificationProcessor: Orquesta el flujo de procesamiento
+- [x] MessageHandler: Parsea mensajes de SQS y EventBridge
+- [x] Soporte para EventBridge events y mensajes directos
+- [x] Unit tests para application layer
 
-#### Paso 3: Application Layer (1-2 horas) ⏳
-- [ ] NotificationProcessor:
-  - [ ] processMessage(): Procesa mensaje de SQS
-  - [ ] sendEmail(): Envía email usando provider
-  - [ ] handleFailure(): Maneja fallos y reintentos
-- [ ] MessageHandler:
-  - [ ] Parsea diferentes tipos de mensajes
-  - [ ] Valida estructura de mensajes
-  - [ ] Extrae datos para templates
+#### ✅ Infrastructure Layer (100%)
+- [x] MockEmailProvider: Simula envío con success rate configurable
+- [x] SQSConsumer: Long polling (20s), batch processing (10 msgs)
+- [x] Visibility timeout management (30s)
+- [x] Delete messages after successful processing
+- [x] Error handling y logging
 
-#### Paso 4: Infrastructure - SQS Consumer (2-3 horas) ⏳
-- [ ] SQSConsumer:
-  - [ ] Long polling (WaitTimeSeconds=20)
-  - [ ] Batch receive (MaxNumberOfMessages=10)
-  - [ ] Visibility timeout management
-  - [ ] Delete messages after processing
-  - [ ] Error handling y logging
-- [ ] Message Parser:
-  - [ ] Parse EventBridge events
-  - [ ] Extract notification data
-  - [ ] Validate message structure
+#### ✅ Main Application (100%)
+- [x] Entry point con dependency injection
+- [x] Graceful shutdown (SIGINT, SIGTERM)
+- [x] Environment configuration
+- [x] Consumer loop con error recovery
 
-#### Paso 5: Infrastructure - Mock Email Provider (1 hora) ⏳
-- [ ] MockEmailProvider:
-  - [ ] sendEmail(): Simula envío (logs)
-  - [ ] Configurable success rate
-  - [ ] Delay simulation
-  - [ ] Email tracking (in-memory)
+#### ✅ Scripts y Configuración (100%)
+- [x] init-sqs.sh: Crea queues con DLQ y redrive policy
+- [x] README.md: Documentación completa con Buffer Pattern
+- [x] .env.example: Variables de entorno
+- [x] pytest.ini: Configuración de tests
 
-#### Paso 6: Infrastructure - SQS Setup Script (30 min) ⏳
-- [ ] init-sqs.sh:
-  - [ ] Crear notification-queue
-  - [ ] Crear notification-dlq
-  - [ ] Configurar redrive policy (maxReceiveCount=3)
-  - [ ] Configurar visibility timeout
-  - [ ] Configurar message retention
+#### ⏳ Pendiente:
+- [ ] Tests de integración con LocalStack
+- [ ] EventBridge rules para conectar con otros servicios
+- [ ] Probar flujo end-to-end
 
-#### Paso 7: Infrastructure - EventBridge Integration (1 hora) ⏳
-- [ ] EventBridge Rules:
-  - [ ] Rule: BookingConfirmed → SQS
-  - [ ] Rule: PaymentProcessed → SQS
-  - [ ] Rule: PaymentFailed → SQS
-- [ ] Script para crear rules
+### 📚 Conceptos Aprendidos:
+- ✅ Buffer Pattern: Desacoplamiento con cola intermedia
+- ✅ Long Polling: Espera eficiente de mensajes (20s)
+- ✅ Visibility Timeout: Previene procesamiento duplicado (30s)
+- ✅ DLQ: Manejo de mensajes fallidos (maxReceiveCount=3)
+- ✅ Batch Processing: Procesa hasta 10 mensajes por poll
+- ✅ Hexagonal Architecture: Ports & Adapters en Python
+- ✅ Async/Await: Procesamiento asíncrono con asyncio
 
-#### Paso 8: Main Application (1 hora) ⏳
-- [ ] Consumer Loop:
-  - [ ] Infinite loop con long polling
-  - [ ] Graceful shutdown (SIGTERM)
-  - [ ] Health check endpoint (opcional)
-  - [ ] Metrics logging
-
-#### Paso 9: Testing (2-3 horas) ⏳
-- [ ] Unit Tests:
-  - [ ] Notification domain tests
-  - [ ] Email template tests
-  - [ ] Message parser tests
-- [ ] Integration Tests:
-  - [ ] SQS consumer tests con LocalStack
-  - [ ] End-to-end message flow
-  - [ ] DLQ behavior tests
-
-#### Paso 10: Integration Testing (1 hora) ⏳
-- [ ] Probar flujo completo:
-  - [ ] Publicar evento a EventBridge
-  - [ ] Verificar mensaje en SQS
-  - [ ] Consumer procesa mensaje
-  - [ ] Email "enviado" (logged)
-  - [ ] Mensaje eliminado de cola
-
-### 📚 Conceptos Clave a Aprender:
-
-**Buffer Pattern:**
-- Desacoplamiento entre productores y consumidores
-- Cola intermedia para absorber picos de carga
-- Procesamiento asíncrono
-
-**Long Polling:**
-- Reduce llamadas a SQS (costo)
-- Reduce latencia vs short polling
-- WaitTimeSeconds hasta 20 segundos
-
-**Visibility Timeout:**
-- Previene procesamiento duplicado
-- Mensaje invisible mientras se procesa
-- Vuelve a estar disponible si no se elimina
-
-**Dead Letter Queue:**
-- Almacena mensajes que fallan repetidamente
-- Permite análisis y corrección manual
-- Previene pérdida de mensajes
-
-**Batch Processing:**
-- Procesa múltiples mensajes a la vez
-- Más eficiente que uno por uno
-- Reduce llamadas a SQS
-
-### 🎯 Criterios de Éxito:
-
-- [ ] Consumer procesa mensajes de SQS correctamente
-- [ ] Long polling funciona (espera hasta 20s)
-- [ ] Mensajes fallidos van a DLQ después de 3 intentos
-- [ ] Mock email provider simula envíos
-- [ ] Tests unitarios >70% cobertura
-- [ ] Integración con EventBridge funciona
-- [ ] Código sigue principios SOLID
-- [ ] Commits siguen Conventional Commits
-
-### 📊 Tiempo Estimado Total: 8-12 horas (1 semana)
+### 🎯 Próximos Pasos:
+- [ ] Tests de integración con LocalStack
+- [ ] EventBridge rules: BookingConfirmed → SQS
+- [ ] EventBridge rules: PaymentProcessed → SQS
+- [ ] Probar flujo completo end-to-end
 
 ---## ⏳ Fase 5: Integración Final - PENDIENTE
 
@@ -335,10 +255,10 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para apren
 Event Service:        █████████████████░░░  85%
 Booking Service:      ████████████████████ 100%
 Payment Service:      ████████████████████ 100%
-Notification Service: ░░░░░░░░░░░░░░░░░░░░   0%
+Notification Service: ████████████████░░░░  80%
 Integration:          ░░░░░░░░░░░░░░░░░░░░   0%
 -------------------------------------------
-TOTAL:                ██████████████░░░░░░  57%
+TOTAL:                ██████████████████░░  73%
 ```
 
 ---

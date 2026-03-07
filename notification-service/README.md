@@ -239,8 +239,7 @@ curl -s http://localhost:4566/_localstack/health | grep sqs
 ### Paso 2 — Crear SQS Queues
 
 ```bash
-# Desde la raíz del proyecto
-cd notification-service
+# Desde notification-service
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test
 export AWS_DEFAULT_REGION=us-east-1
@@ -248,31 +247,56 @@ export AWS_DEFAULT_REGION=us-east-1
 bash scripts/init-sqs.sh
 ```
 
-### Paso 3 — Activar venv e iniciar servicio
+### Paso 3 — Crear y activar venv
 
 ```bash
+# Crear virtual environment
+python -m venv venv
+
+# Activar (Git Bash en Windows)
 source venv/Scripts/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+```
+
+### Paso 4 — Iniciar servicio
+
+```bash
+# Con venv activado
 python -m src.main
 ```
 
-### Paso 4 — Enviar mensaje de prueba
+### Paso 5 — Enviar mensaje de prueba
 
 ```bash
-# En otra terminal
+# En otra terminal Git Bash
 aws --endpoint-url=http://localhost:4566 sqs send-message \
   --queue-url http://localhost:4566/000000000000/notification-queue \
-  --message-body '{"type":"BOOKING_CONFIRMED","bookingId":"123","email":"user@example.com"}'
+  --message-body '{"type":"BOOKING_CONFIRMED","email":"user@example.com","bookingId":"123","eventName":"Concert","ticketQuantity":2,"totalPrice":100.0}'
+```
+
+### Paso 6 — Verificar logs
+
+Deberías ver en los logs del servicio:
+
+```
+INFO - [MOCK] Email sent to user@example.com
+Subject: Booking Confirmed - Event Management
+Body preview: Dear Customer, Your booking has been confirmed!...
+INFO - Notification <id> sent successfully
+INFO - Message <id> processed successfully
 ```
 
 ## ✅ Estado Actual
 
-- [ ] Domain Layer
-- [ ] Application Layer
-- [ ] Infrastructure Layer
-- [ ] SQS Consumer
-- [ ] Mock Email Provider
-- [ ] Tests unitarios
-- [ ] Script de inicialización
+- [x] Domain Layer
+- [x] Application Layer
+- [x] Infrastructure Layer
+- [x] SQS Consumer
+- [x] Mock Email Provider
+- [x] Tests unitarios (60+ tests)
+- [x] Script de inicialización (init-sqs.sh)
 
 ## 🛠️ Troubleshooting
 
