@@ -18,7 +18,7 @@ export class BookingCreated implements DomainEvent {
 
   constructor(
     readonly userId: string,
-    readonly eventId: string,
+    readonly eventIdValue: string,
     readonly ticketQuantity: number,
     readonly totalPrice: number,
     readonly currency: string,
