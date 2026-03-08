@@ -19,13 +19,13 @@ public class Event {
     private String name;
     private String description;
     private final EventType type;
-    private final EventId venueId;  // Referencia al venue
+    private final EventId venueId;
     private final LocalDateTime eventDate;
     private final Capacity totalCapacity;
     private Capacity availableCapacity;
     private Price price;
     private EventStatus status;
-    private final Instant createdAt;
+    private Instant createdAt;
     private Instant updatedAt;
     
     /**
@@ -81,8 +81,8 @@ public class Event {
         Event event = new Event(id, name, description, type, venueId, eventDate, totalCapacity, price);
         event.availableCapacity = availableCapacity;
         event.status = status;
-        // Note: createdAt and updatedAt are final, so they keep constructor values
-        // This is OK for now - we can improve later if needed
+        event.createdAt = createdAt;
+        event.updatedAt = updatedAt;
         return event;
     }
     

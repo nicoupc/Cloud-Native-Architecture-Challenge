@@ -36,7 +36,7 @@ public record EventCreated(
         com.eventmanagement.eventservice.domain.model.Event event
     ) {
         return new EventCreated(
-            UUID.randomUUID().toString(),
+            event.getId().value().toString(),
             event.getId().value().toString(),
             event.getName(),
             event.getType().toString(),

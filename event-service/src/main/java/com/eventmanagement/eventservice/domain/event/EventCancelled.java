@@ -32,7 +32,7 @@ public record EventCancelled(
      */
     public static EventCancelled from(Event event, String reason) {
         return new EventCancelled(
-            UUID.randomUUID().toString(),
+            event.getId().value().toString(),
             event.getId().value().toString(),
             event.getName(),
             reason,

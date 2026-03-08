@@ -35,7 +35,7 @@ public record EventPublished(
      */
     public static EventPublished from(Event event) {
         return new EventPublished(
-            UUID.randomUUID().toString(),
+            event.getId().value().toString(),
             event.getId().value().toString(),
             event.getName(),
             event.getType().toString(),

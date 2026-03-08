@@ -52,15 +52,16 @@ public class EventController {
      */
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@RequestBody CreateEventRequest request) {
-        // 1. Convertir el request HTTP a objetos del dominio
-        // Por ahora usamos un venueId dummy (más adelante lo obtendremos del request)
-        EventId dummyVenueId = EventId.generate();
+        // Usar venueId del request, o generar uno temporal si no viene
+        EventId venueId = (request.venueId() != null && !request.venueId().isBlank())
+            ? new EventId(java.util.UUID.fromString(request.venueId()))
+            : EventId.generate();
         
         Event event = Event.create(
             request.name(),
             request.description(),
             request.type(),
-            dummyVenueId,  // VenueId temporal
+            venueId,
             request.eventDate(),
             new Capacity(request.capacity()),
             new Price(new BigDecimal(request.price()), "USD")
@@ -133,7 +134,8 @@ record CreateEventRequest(
     EventType type,
     LocalDateTime eventDate,
     int capacity,
-    String price
+    String price,
+    String venueId
 ) {}
 
 /**
