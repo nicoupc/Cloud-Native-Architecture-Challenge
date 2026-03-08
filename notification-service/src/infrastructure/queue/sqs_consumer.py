@@ -2,6 +2,7 @@
 SQS Consumer
 
 Polls messages from SQS queue with long polling.
+Includes token-bucket rate limiting to prevent throttling.
 """
 
 import logging
@@ -11,15 +12,17 @@ import boto3
 from botocore.exceptions import ClientError
 
 from ...application import NotificationProcessor
+from ..rate_limiter import TokenBucketRateLimiter
 
 logger = logging.getLogger(__name__)
 
 
 class SQSConsumer:
     """
-    SQS Consumer with long polling
+    SQS Consumer with long polling and rate limiting.
     
     Implements Buffer Pattern by consuming messages from SQS queue.
+    Rate limiting prevents overwhelming downstream services.
     """
     
     def __init__(
@@ -30,7 +33,9 @@ class SQSConsumer:
         region_name: str = "us-east-1",
         max_messages: int = 10,
         wait_time_seconds: int = 20,
-        visibility_timeout: int = 30
+        visibility_timeout: int = 30,
+        rate_limit_per_second: float = 5.0,
+        rate_limit_burst: float = 10.0
     ):
         """
         Initialize SQS consumer
@@ -43,6 +48,8 @@ class SQSConsumer:
             max_messages: Max messages per poll (1-10)
             wait_time_seconds: Long polling wait time (0-20)
             visibility_timeout: Message visibility timeout
+            rate_limit_per_second: Max sustained messages per second
+            rate_limit_burst: Max burst size for rate limiter
         """
         self.queue_url = queue_url
         self.processor = processor
@@ -50,6 +57,10 @@ class SQSConsumer:
         self.wait_time_seconds = wait_time_seconds
         self.visibility_timeout = visibility_timeout
         self.running = False
+        self.rate_limiter = TokenBucketRateLimiter(
+            rate=rate_limit_per_second,
+            max_tokens=rate_limit_burst
+        )
         
         # Initialize SQS client
         self.sqs = boto3.client(
@@ -98,8 +109,9 @@ class SQSConsumer:
             
             logger.info(f"Received {len(messages)} messages")
             
-            # Process messages
+            # Process messages with rate limiting
             for message in messages:
+                await self.rate_limiter.acquire()
                 await self._process_message(message)
                 
         except ClientError as e:

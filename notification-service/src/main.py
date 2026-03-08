@@ -37,6 +37,10 @@ class NotificationService:
         self.endpoint_url = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
         self.region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
         
+        # Rate limiting configuration
+        rate_limit = float(os.getenv("RATE_LIMIT_PER_SECOND", "5"))
+        rate_limit_burst = float(os.getenv("RATE_LIMIT_BURST", "10"))
+        
         # Initialize components
         self.email_provider = MockEmailProvider(success_rate=0.9)
         self.processor = NotificationProcessor(self.email_provider)
@@ -44,7 +48,9 @@ class NotificationService:
             queue_url=self.queue_url,
             processor=self.processor,
             endpoint_url=self.endpoint_url,
-            region_name=self.region
+            region_name=self.region,
+            rate_limit_per_second=rate_limit,
+            rate_limit_burst=rate_limit_burst
         )
         
         # Shutdown flag
@@ -64,6 +70,7 @@ class NotificationService:
         logger.info("Starting Notification Service")
         logger.info(f"Queue URL: {self.queue_url}")
         logger.info(f"Endpoint: {self.endpoint_url}")
+        logger.info(f"Rate limit: {self.consumer.rate_limiter.rate} msgs/sec")
         
         # Start consumer
         consumer_task = asyncio.create_task(self.consumer.start())
