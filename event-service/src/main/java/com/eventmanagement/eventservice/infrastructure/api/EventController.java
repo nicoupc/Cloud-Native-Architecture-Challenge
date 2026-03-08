@@ -1,6 +1,8 @@
 package com.eventmanagement.eventservice.infrastructure.api;
 
+import com.eventmanagement.eventservice.application.service.CancelEventService;
 import com.eventmanagement.eventservice.application.service.CreateEventService;
+import com.eventmanagement.eventservice.application.service.GetEventService;
 import com.eventmanagement.eventservice.domain.model.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,51 +10,35 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
-/**
- * REST Controller - El "mostrador" donde llegan las peticiones HTTP.
- * 
- * Analogía: Esto es como el mesero de un restaurante:
- * - Recibe pedidos (HTTP requests)
- * - Los pasa a la cocina (CreateEventService)
- * - Devuelve la comida (HTTP response)
- */
 @RestController
 @RequestMapping("/api/v1/events")
 public class EventController {
 
     private final CreateEventService createEventService;
     private final com.eventmanagement.eventservice.application.service.PublishEventService publishEventService;
+    private final CancelEventService cancelEventService;
+    private final GetEventService getEventService;
 
-    /**
-     * Constructor Injection - Spring Boot inyecta automáticamente los servicios.
-     * Es como si el restaurante te asignara automáticamente un chef.
-     */
     public EventController(
         CreateEventService createEventService,
-        com.eventmanagement.eventservice.application.service.PublishEventService publishEventService
+        com.eventmanagement.eventservice.application.service.PublishEventService publishEventService,
+        CancelEventService cancelEventService,
+        GetEventService getEventService
     ) {
         this.createEventService = createEventService;
         this.publishEventService = publishEventService;
+        this.cancelEventService = cancelEventService;
+        this.getEventService = getEventService;
     }
 
     /**
-     * POST /api/v1/events - Crear un nuevo evento
-     * 
-     * Ejemplo de petición:
-     * POST http://localhost:8080/api/v1/events
-     * Body: {
-     *   "name": "Rock Concert",
-     *   "description": "Amazing rock concert",
-     *   "type": "CONCERT",
-     *   "eventDate": "2026-12-31T20:00:00",
-     *   "capacity": 1000,
-     *   "price": 50.00
-     * }
+     * POST /api/v1/events - Create a new event
      */
     @PostMapping
     public ResponseEntity<EventResponse> createEvent(@RequestBody CreateEventRequest request) {
-        // Usar venueId del request, o generar uno temporal si no viene
         EventId venueId = (request.venueId() != null && !request.venueId().isBlank())
             ? new EventId(java.util.UUID.fromString(request.venueId()))
             : EventId.generate();
@@ -67,67 +53,79 @@ public class EventController {
             new Price(new BigDecimal(request.price()), "USD")
         );
 
-        // 2. Llamar al servicio de aplicación
         Event savedEvent = createEventService.execute(event);
-
-        // 3. Convertir el evento del dominio a respuesta HTTP
-        EventResponse response = new EventResponse(
-            savedEvent.getId().value().toString(),
-            savedEvent.getName(),
-            savedEvent.getDescription(),
-            savedEvent.getType().toString(),
-            savedEvent.getEventDate().toString(),
-            savedEvent.getTotalCapacity().value(),
-            savedEvent.getPrice().amount().toString(),
-            savedEvent.getStatus().toString()
-        );
-
-        // 4. Devolver respuesta con código 201 (Created)
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(savedEvent));
     }
 
     /**
-     * POST /api/v1/events/{id}/publish - Publicar un evento
-     * 
-     * Ejemplo de petición:
-     * POST http://localhost:8080/api/v1/events/123e4567-e89b-12d3-a456-426614174000/publish
+     * POST /api/v1/events/{id}/publish - Publish an event
      */
     @PostMapping("/{id}/publish")
     public ResponseEntity<EventResponse> publishEvent(@PathVariable String id) {
-        // 1. Convertir String a EventId
         EventId eventId = new EventId(java.util.UUID.fromString(id));
-        
-        // 2. Llamar al servicio de aplicación
         Event publishedEvent = publishEventService.execute(eventId);
-        
-        // 3. Convertir el evento del dominio a respuesta HTTP
-        EventResponse response = new EventResponse(
-            publishedEvent.getId().value().toString(),
-            publishedEvent.getName(),
-            publishedEvent.getDescription(),
-            publishedEvent.getType().toString(),
-            publishedEvent.getEventDate().toString(),
-            publishedEvent.getTotalCapacity().value(),
-            publishedEvent.getPrice().amount().toString(),
-            publishedEvent.getStatus().toString()
-        );
-        
-        // 4. Devolver respuesta con código 200 (OK)
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(toResponse(publishedEvent));
     }
-    
+
     /**
-     * GET /api/v1/events/health - Endpoint simple para verificar que funciona
+     * POST /api/v1/events/{id}/cancel - Cancel an event
+     */
+    @PostMapping("/{id}/cancel")
+    public ResponseEntity<EventResponse> cancelEvent(
+        @PathVariable String id,
+        @RequestBody(required = false) CancelEventRequest request
+    ) {
+        EventId eventId = new EventId(java.util.UUID.fromString(id));
+        String reason = (request != null && request.reason() != null) ? request.reason() : "No reason provided";
+        Event cancelledEvent = cancelEventService.execute(eventId, reason);
+        return ResponseEntity.ok(toResponse(cancelledEvent));
+    }
+
+    /**
+     * GET /api/v1/events/{id} - Get event by ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<EventResponse> getEvent(@PathVariable String id) {
+        EventId eventId = new EventId(java.util.UUID.fromString(id));
+        Event event = getEventService.getById(eventId);
+        return ResponseEntity.ok(toResponse(event));
+    }
+
+    /**
+     * GET /api/v1/events - List all events
+     */
+    @GetMapping
+    public ResponseEntity<List<EventResponse>> listEvents() {
+        List<Event> events = getEventService.getAll();
+        List<EventResponse> responses = events.stream()
+            .map(this::toResponse)
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(responses);
+    }
+
+    /**
+     * GET /api/v1/events/health - Health check
      */
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("Event Service is running!");
     }
+
+    private EventResponse toResponse(Event event) {
+        return new EventResponse(
+            event.getId().value().toString(),
+            event.getName(),
+            event.getDescription(),
+            event.getType().toString(),
+            event.getEventDate().toString(),
+            event.getTotalCapacity().value(),
+            event.getAvailableCapacity().value(),
+            event.getPrice().amount().toString(),
+            event.getStatus().toString()
+        );
+    }
 }
 
-/**
- * DTO para recibir datos del cliente (Request)
- */
 record CreateEventRequest(
     String name,
     String description,
@@ -138,16 +136,18 @@ record CreateEventRequest(
     String venueId
 ) {}
 
-/**
- * DTO para enviar datos al cliente (Response)
- */
+record CancelEventRequest(
+    String reason
+) {}
+
 record EventResponse(
     String id,
     String name,
     String description,
     String type,
     String eventDate,
-    int capacity,
+    int totalCapacity,
+    int availableCapacity,
     String price,
     String status
 ) {}
