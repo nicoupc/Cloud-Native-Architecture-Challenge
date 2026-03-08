@@ -8,34 +8,36 @@ Implementar 4 microservicios con diferentes patrones arquitectónicos para demos
 ## 📈 Progreso General
 
 ```
-Fase 1 - Event Service:        █████████████████░░░  85%
+Fase 1 - Event Service:        ███████████████████░  95%
 Fase 2 - Booking Service:      ████████████████████ 100%
 Fase 3 - Payment Service:      ████████████████████ 100%
 Fase 4 - Notification Service: ████████████████████ 100%
-Fase 5 - Integración Final:    ░░░░░░░░░░░░░░░░░░░░   0%
+Fase 5 - Integración Final:    ██████████░░░░░░░░░░  50%
 -------------------------------------------
-TOTAL:                         ████████████████░░░░  77%
+TOTAL:                         █████████████████░░░  89%
 ```
 
 ---
 
-## ✅ Fase 1: Event Service — Hexagonal Architecture — COMPLETADA (85%)
+## ✅ Fase 1: Event Service — Hexagonal Architecture — COMPLETADA (95%)
 
 **Tecnología:** Java 17 + Spring Boot  
 **Patrón:** Hexagonal Architecture (Ports & Adapters)  
 **Puerto:** 8080
 
 ### ✅ Implementado:
-- [x] Domain Layer: Event aggregate, Value Objects (EventDate, Capacity, Price, Location), Ports
-- [x] Application Layer: CreateEventService, PublishEventService
+- [x] Domain Layer: Event aggregate, Value Objects (Capacity, Price, EventId), Ports
+- [x] Application Layer: CreateEventService, PublishEventService, CancelEventService, GetEventService
 - [x] Infrastructure Layer: PostgreSQL adapter (RDS LocalStack), EventBridge adapter, REST API
-- [x] 3 endpoints: `POST /api/v1/events`, `POST /api/v1/events/{id}/publish`, `GET /api/v1/events/health`
+- [x] 6 endpoints: `POST /events`, `GET /events`, `GET /events/{id}`, `POST /events/{id}/publish`, `POST /events/{id}/cancel`, `GET /events/health`
+- [x] GlobalExceptionHandler: 404 (not found), 409 (invalid state), 400 (bad request)
+- [x] Bugs corregidos: domain events usaban UUID random, reconstruct() no restauraba timestamps, controller generaba venueId dummy
 - [x] 10 tests unitarios pasando
 - [x] Scripts: `init-localstack.sh` (RDS), `init-eventbridge.sh` (EventBridge)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
 ### ⏳ Pendiente (opcional):
-- [ ] Endpoints GET, PUT, DELETE para eventos
+- [ ] Value Objects EventDate y Location (mejora de modelado)
 - [ ] Venue aggregate
 - [ ] Tests de integración con Testcontainers
 
@@ -80,25 +82,27 @@ TOTAL:                         ████████████████�
 
 **Tecnología:** Python + asyncio  
 **Patrón:** Buffer Pattern con SQS  
-**Puerto:** 3003
+**Puerto:** N/A (consumidor de mensajes, no HTTP)
 
 ### ✅ Implementado:
 - [x] Domain Layer: Notification aggregate, Value Objects (NotificationId, NotificationType, EmailAddress, EmailSubject, EmailBody, TemplateData), 6 Email Templates (BookingConfirmed, BookingCancelled, PaymentProcessed, PaymentFailed, EventPublished, EventCancelled), Domain Events (NotificationSent, NotificationFailed), Ports
 - [x] Application Layer: NotificationProcessor (orquesta el flujo), MessageHandler (parsea mensajes de SQS y EventBridge)
 - [x] Infrastructure Layer: SQSConsumer (long polling 20s, batch 10 msgs, visibility timeout 30s), MockEmailProvider (90% éxito)
+- [x] **Rate Limiting:** Token Bucket (5 msgs/seg, burst 10) — configurable vía `RATE_LIMIT_PER_SECOND` y `RATE_LIMIT_BURST`
 - [x] Dead Letter Queue (DLQ): mensajes pasan a DLQ tras 3 fallos
 - [x] Graceful shutdown (SIGINT, SIGTERM)
-- [x] 47 tests unitarios pasando
+- [x] 54 tests unitarios pasando (incluye 7 tests de rate limiter)
+- [x] Cobertura >70%
 - [x] Script: `init-notification-sqs.sh` (notification-queue + notification-dlq)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
 ---
 
-## ⏳ Fase 5: Integración Final — PENDIENTE (0%)
+## 🔄 Fase 5: Integración Final — EN PROGRESO (50%)
 
 **Objetivo:** Conectar los 4 servicios para que funcionen juntos de punta a punta.
 
-### Flujo completo a implementar:
+### Flujo completo:
 ```
 1. Admin crea evento        → Event Service
 2. Usuario hace reserva     → Booking Service (estado: PENDING)
@@ -109,13 +113,19 @@ TOTAL:                         ████████████████�
 7. Notification envía email → Mock email (log)
 ```
 
-### Tareas pendientes:
-- [ ] Configurar reglas EventBridge: `BookingCreated` → Payment Service
-- [ ] Configurar reglas EventBridge: `PaymentCompleted` → SQS (Notification Service)
-- [ ] Conectar Payment Service con Booking Service real (puerto 3001)
-- [ ] Probar happy path completo (pago exitoso)
-- [ ] Probar failure path (compensación Saga activa)
-- [ ] Probar flujo completo end-to-end
+### ✅ Completado:
+- [x] Script `init-eventbridge-rules.sh` con 5 reglas EventBridge:
+  - PaymentConfirmed → notification-queue
+  - PaymentFailed → notification-queue
+  - EventPublished → notification-queue
+  - EventCancelled → notification-queue
+  - BookingCreated → notification-queue
+- [x] Payment Service se conecta a Booking Service (HTTP: confirm/cancel)
+- [x] Colección Postman con todos los endpoints (`postman-collection.json`)
+
+### ⏳ Pendiente:
+- [ ] Prueba end-to-end con los 4 servicios levantados
+- [ ] Documentar resultados del E2E test
 
 ---
 
@@ -123,22 +133,21 @@ TOTAL:                         ████████████████�
 
 ### Código ✅
 - [x] 4 microservicios funcionales con sus patrones correctos
-- [x] Tests unitarios (10 + 41 + 74 + 47 = **172 tests** en total)
+- [x] Tests unitarios (10 + 41 + 74 + 54 = **179 tests** en total)
 - [x] Cobertura >70% en todos los servicios
 - [x] Scripts de infraestructura (`init-*.sh`) para cada servicio
 - [x] Docker Compose para levantar LocalStack
 - [x] READMEs con instrucciones paso a paso (Git Bash)
 - [x] Commits profesionales (Conventional Commits)
 
-### Documentación ⏳
-- [ ] Diagrama de arquitectura (C4 Model)
-- [ ] Diagramas de secuencia para flujos principales
-- [ ] Decisiones arquitectónicas (ADRs)
+### Documentación ✅
+- [x] Diagrama de arquitectura C4 (`docs/architecture-c4.md`)
+- [x] Diagramas de secuencia para 4 flujos (`docs/sequence-diagrams.md`)
+- [x] Colección Postman con todos los endpoints (`postman-collection.json`)
 
-### Demo ⏳
-- [ ] Integración end-to-end funcionando (Fase 5)
-- [ ] Colección Postman/Insomnia con todos los endpoints
-- [ ] Datos de prueba (seed scripts)
+### Demo 🔄
+- [x] Reglas EventBridge configuradas (script)
+- [ ] Prueba end-to-end con resultados documentados
 
 ---
 
@@ -148,6 +157,7 @@ TOTAL:                         ████████████████�
 |--------|----------|------------|
 | `init-localstack.sh` | Event Service | RDS PostgreSQL |
 | `init-eventbridge.sh` | Event Service | Bus EventBridge |
+| `init-eventbridge-rules.sh` | Integración | 5 reglas EventBridge (EDA) |
 | `init-dynamodb.sh` | Booking Service | Tabla `Bookings` con GSI |
 | `init-payment-dynamodb.sh` | Payment Service | Tabla `payment-sagas` con GSI |
 | `init-notification-sqs.sh` | Notification Service | `notification-queue` + `notification-dlq` |
