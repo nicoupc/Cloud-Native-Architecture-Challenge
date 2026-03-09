@@ -134,14 +134,6 @@ export class Booking {
   }
 
   /**
-   * Checks if booking is in a final state
-   */
-  isFinal(): boolean {
-    return this.status === BookingStatus.CONFIRMED ||
-           this.status === BookingStatus.CANCELLED;
-  }
-
-  /**
    * Checks if booking can be cancelled
    */
   canBeCancelled(): boolean {

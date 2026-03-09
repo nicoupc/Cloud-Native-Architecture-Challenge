@@ -20,7 +20,7 @@ from .email_templates import (
     TemplateFactory
 )
 from .events import DomainEvent, NotificationSent, NotificationFailed
-from .ports import EmailProvider, NotificationRepository
+from .ports import EmailProvider
 
 __all__ = [
     "NotificationId",
@@ -42,5 +42,4 @@ __all__ = [
     "NotificationSent",
     "NotificationFailed",
     "EmailProvider",
-    "NotificationRepository",
 ]

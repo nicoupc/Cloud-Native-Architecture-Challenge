@@ -6,15 +6,12 @@ Orchestrates notification processing workflow.
 
 import logging
 from typing import Optional
-from uuid import uuid4
 from datetime import datetime, timezone
 
 from ..domain import (
     Notification,
     NotificationType,
     EmailProvider,
-    NotificationSent,
-    NotificationFailed
 )
 from .message_handler import MessageHandler
 
@@ -108,33 +105,11 @@ class NotificationProcessor:
             if success:
                 notification.mark_as_sent()
                 logger.info(f"Notification {notification.notification_id} sent successfully")
-                
-                # Create domain event
-                event = NotificationSent(
-                    event_id=str(uuid4()),
-                    occurred_at=datetime.now(timezone.utc),
-                    notification_id=notification.notification_id,
-                    notification_type=notification.notification_type,
-                    recipient=str(notification.recipient)
-                )
-                
                 return True
             else:
                 error_msg = "Email provider returned failure"
                 notification.mark_as_failed(error_msg)
                 logger.error(f"Failed to send notification {notification.notification_id}")
-                
-                # Create domain event
-                event = NotificationFailed(
-                    event_id=str(uuid4()),
-                    occurred_at=datetime.now(timezone.utc),
-                    notification_id=notification.notification_id,
-                    notification_type=notification.notification_type,
-                    recipient=str(notification.recipient),
-                    error_message=error_msg,
-                    retry_count=notification.retry_count
-                )
-                
                 return False
                 
         except Exception as e:
