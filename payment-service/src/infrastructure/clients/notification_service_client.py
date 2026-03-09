@@ -7,7 +7,7 @@ For this implementation, we publish events that Notification Service consumes.
 
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import boto3
 
 from ...domain.ports import NotificationServiceClient
@@ -61,7 +61,7 @@ class EventBridgeNotificationClient(NotificationServiceClient):
         
         self.client.put_events(
             Entries=[{
-                "Time": datetime.utcnow(),
+                "Time": datetime.now(timezone.utc),
                 "Source": "payment-service",
                 "DetailType": "PaymentConfirmed",
                 "Detail": json.dumps(event),
@@ -89,7 +89,7 @@ class EventBridgeNotificationClient(NotificationServiceClient):
         
         self.client.put_events(
             Entries=[{
-                "Time": datetime.utcnow(),
+                "Time": datetime.now(timezone.utc),
                 "Source": "payment-service",
                 "DetailType": "PaymentFailed",
                 "Detail": json.dumps(event),

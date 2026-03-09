@@ -3,7 +3,7 @@ Tests for Domain Events
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from src.domain.events import (
@@ -31,7 +31,7 @@ class TestDomainEvents:
         
         event = SagaStarted(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaStarted",
             saga_id=saga_id,
             booking_id=booking_id,
@@ -51,7 +51,7 @@ class TestDomainEvents:
         
         event = SagaStarted(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaStarted",
             saga_id=saga_id,
             booking_id=booking_id,
@@ -74,7 +74,7 @@ class TestDomainEvents:
         
         event = PaymentProcessed(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="PaymentProcessed",
             saga_id=saga_id,
             booking_id=booking_id,
@@ -93,7 +93,7 @@ class TestDomainEvents:
         
         event = PaymentFailed(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="PaymentFailed",
             saga_id=saga_id,
             booking_id=booking_id,
@@ -113,7 +113,7 @@ class TestDomainEvents:
         
         event = SagaCompensating(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaCompensating",
             saga_id=saga_id,
             booking_id=booking_id,
@@ -132,7 +132,7 @@ class TestDomainEvents:
         
         event = BookingReserved(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="BookingReserved",
             saga_id=saga_id,
             booking_id=booking_id,
@@ -150,7 +150,7 @@ class TestDomainEvents:
         events = [
             SagaStarted(
                 event_id=str(uuid4()),
-                occurred_at=datetime.utcnow(),
+                occurred_at=datetime.now(timezone.utc),
                 event_type="SagaStarted",
                 saga_id=saga_id,
                 booking_id=booking_id,
@@ -158,14 +158,14 @@ class TestDomainEvents:
             ),
             BookingReserved(
                 event_id=str(uuid4()),
-                occurred_at=datetime.utcnow(),
+                occurred_at=datetime.now(timezone.utc),
                 event_type="BookingReserved",
                 saga_id=saga_id,
                 booking_id=booking_id,
             ),
             SagaCompleted(
                 event_id=str(uuid4()),
-                occurred_at=datetime.utcnow(),
+                occurred_at=datetime.now(timezone.utc),
                 event_type="SagaCompleted",
                 saga_id=saga_id,
                 booking_id=booking_id,

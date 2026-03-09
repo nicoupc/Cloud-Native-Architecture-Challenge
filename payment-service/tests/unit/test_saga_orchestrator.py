@@ -300,7 +300,7 @@ class TestSagaOrchestratorCompensation:
         sample_saga.complete_current_step()  # RESERVE_BOOKING completed
         
         # Compensate
-        await orchestrator._compensate_saga(sample_saga, "Payment failed")
+        await orchestrator.compensate_saga(sample_saga, "Payment failed")
         
         # Verify state transitions
         assert sample_saga.state == SagaState.COMPENSATED

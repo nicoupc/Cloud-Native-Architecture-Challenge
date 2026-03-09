@@ -8,7 +8,7 @@ Publishes domain events to event bus for other services.
 import os
 import json
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 import boto3
 from botocore.exceptions import ClientError
 
@@ -98,7 +98,7 @@ class EventBridgePublisher(EventPublisher):
             EventBridge entry dictionary
         """
         return {
-            "Time": datetime.utcnow(),
+            "Time": datetime.now(timezone.utc),
             "Source": "payment-service",
             "DetailType": event.event_type,
             "Detail": json.dumps(event.to_dict()),

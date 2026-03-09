@@ -5,7 +5,7 @@ Value objects encapsulate validation and business rules.
 """
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
@@ -138,7 +138,7 @@ class SagaStep:
         return SagaStep(
             name=self.name,
             status=self.status,
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
             completed_at=self.completed_at,
             error_message=self.error_message,
             retry_count=self.retry_count,
@@ -150,7 +150,7 @@ class SagaStep:
             name=self.name,
             status="COMPLETED",
             started_at=self.started_at,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             error_message=None,
             retry_count=self.retry_count,
         )
@@ -161,7 +161,7 @@ class SagaStep:
             name=self.name,
             status="FAILED",
             started_at=self.started_at,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             error_message=error_message,
             retry_count=self.retry_count,
         )

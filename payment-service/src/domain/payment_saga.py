@@ -6,7 +6,7 @@ Maintains saga state and enforces business rules.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from .saga_state import SagaState, SagaStateTransition
@@ -15,6 +15,16 @@ from .exceptions import (
     InvalidSagaStateTransitionError,
     SagaAlreadyCompletedError,
 )
+
+
+@dataclass
+class PaymentAttempt:
+    """Records a single payment attempt"""
+    attempt_number: int
+    timestamp: datetime
+    status: str  # SUCCESS, FAILED
+    payment_id: Optional[str] = None
+    error: Optional[str] = None
 
 
 @dataclass
@@ -38,10 +48,12 @@ class PaymentSaga:
     state: SagaState
     steps: List[SagaStep] = field(default_factory=list)
     current_step_index: int = 0
-    created_at: datetime = field(default_factory=datetime.utcnow)
-    updated_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     completed_at: Optional[datetime] = None
     error_message: Optional[str] = None
+    payment_id: Optional[str] = None
+    payment_attempts: List['PaymentAttempt'] = field(default_factory=list)
     
     @classmethod
     def create(
@@ -96,18 +108,18 @@ class PaymentSaga:
         
         # Update state
         self.state = new_state
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
         
         # Mark as completed if terminal state
         if SagaStateTransition.is_terminal_state(new_state):
-            self.completed_at = datetime.utcnow()
+            self.completed_at = datetime.now(timezone.utc)
     
     def start_current_step(self) -> None:
         """Mark current step as started"""
         if self.current_step_index < len(self.steps):
             step = self.steps[self.current_step_index]
             self.steps[self.current_step_index] = step.mark_started()
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
     
     def complete_current_step(self) -> None:
         """
@@ -125,7 +137,7 @@ class PaymentSaga:
         
         # Advance to next step
         self.current_step_index += 1
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def fail_current_step(self, error_message: str) -> None:
         """
@@ -139,14 +151,14 @@ class PaymentSaga:
             self.steps[self.current_step_index] = step.mark_failed(error_message)
         
         self.error_message = error_message
-        self.updated_at = datetime.utcnow()
+        self.updated_at = datetime.now(timezone.utc)
     
     def retry_current_step(self) -> None:
         """Increment retry count for current step"""
         if self.current_step_index < len(self.steps):
             step = self.steps[self.current_step_index]
             self.steps[self.current_step_index] = step.increment_retry()
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
     
     def get_current_step(self) -> Optional[SagaStep]:
         """Get the current step being executed"""
@@ -177,6 +189,23 @@ class PaymentSaga:
     def get_completed_steps(self) -> List[SagaStep]:
         """Get list of completed steps (for compensation)"""
         return [step for step in self.steps if step.status == "COMPLETED"]
+    
+    def set_payment_id(self, payment_id: str) -> None:
+        """Store the payment gateway's payment ID"""
+        self.payment_id = payment_id
+        self.updated_at = datetime.now(timezone.utc)
+    
+    def record_payment_attempt(self, status: str, payment_id: Optional[str] = None, error: Optional[str] = None) -> None:
+        """Record a payment attempt"""
+        attempt = PaymentAttempt(
+            attempt_number=len(self.payment_attempts) + 1,
+            timestamp=datetime.now(timezone.utc),
+            status=status,
+            payment_id=payment_id,
+            error=error,
+        )
+        self.payment_attempts.append(attempt)
+        self.updated_at = datetime.now(timezone.utc)
     
     def __str__(self) -> str:
         return (

@@ -199,7 +199,7 @@ async def compensate_saga(
                 detail=f"Saga {saga_id} not found"
             )
         
-        compensated_saga = await orchestrator._compensate_saga(saga, "Manual compensation requested")
+        compensated_saga = await orchestrator.compensate_saga(saga, "Manual compensation requested")
         
         return saga_to_response(compensated_saga)
         

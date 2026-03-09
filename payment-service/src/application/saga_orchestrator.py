@@ -11,7 +11,7 @@ The orchestrator is responsible for:
 import logging
 from typing import Optional, List
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..domain.payment_saga import PaymentSaga
 from ..domain.saga_state import SagaState
@@ -101,7 +101,7 @@ class SagaOrchestrator:
         # Publish event
         event = SagaStarted(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaStarted",
             saga_id=saga.id,
             booking_id=saga.booking_id,
@@ -178,7 +178,7 @@ class SagaOrchestrator:
                 saga = await self.saga_repository.save(saga)
                 
                 # Trigger compensation
-                await self._compensate_saga(saga, str(e))
+                await self.compensate_saga(saga, str(e))
                 break
         
         return saga
@@ -221,7 +221,7 @@ class SagaOrchestrator:
         # Publish event
         event = BookingReserved(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="BookingReserved",
             saga_id=saga.id,
             booking_id=saga.booking_id,
@@ -246,6 +246,14 @@ class SagaOrchestrator:
             
             payment_id = result.get("payment_id")
             
+            # Store payment_id and record successful attempt
+            if payment_id:
+                saga.set_payment_id(payment_id)
+            saga.record_payment_attempt(
+                status="SUCCESS",
+                payment_id=payment_id,
+            )
+            
             # Transition state
             saga.transition_to(SagaState.PAYMENT_PROCESSED)
             await self.saga_repository.save(saga)
@@ -253,7 +261,7 @@ class SagaOrchestrator:
             # Publish success event
             event = PaymentProcessed(
                 event_id=str(uuid4()),
-                occurred_at=datetime.utcnow(),
+                occurred_at=datetime.now(timezone.utc),
                 event_type="PaymentProcessed",
                 saga_id=saga.id,
                 booking_id=saga.booking_id,
@@ -263,10 +271,14 @@ class SagaOrchestrator:
             await self.event_publisher.publish(event)
             
         except PaymentGatewayError as e:
+            saga.record_payment_attempt(
+                status="FAILED",
+                error=str(e),
+            )
             # Publish failure event
             event = PaymentFailed(
                 event_id=str(uuid4()),
-                occurred_at=datetime.utcnow(),
+                occurred_at=datetime.now(timezone.utc),
                 event_type="PaymentFailed",
                 saga_id=saga.id,
                 booking_id=saga.booking_id,
@@ -295,7 +307,7 @@ class SagaOrchestrator:
         # Publish event
         event = BookingConfirmed(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="BookingConfirmed",
             saga_id=saga.id,
             booking_id=saga.booking_id,
@@ -330,7 +342,7 @@ class SagaOrchestrator:
         # Publish event
         event = SagaCompleted(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaCompleted",
             saga_id=saga.id,
             booking_id=saga.booking_id,
@@ -339,7 +351,7 @@ class SagaOrchestrator:
         
         logger.info(f"Saga {saga.id} completed successfully")
     
-    async def _compensate_saga(self, saga: PaymentSaga, reason: str) -> None:
+    async def compensate_saga(self, saga: PaymentSaga, reason: str) -> None:
         """
         Compensate saga (rollback)
         
@@ -358,7 +370,7 @@ class SagaOrchestrator:
         # Publish event
         event = SagaCompensating(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaCompensating",
             saga_id=saga.id,
             booking_id=saga.booking_id,
@@ -388,7 +400,7 @@ class SagaOrchestrator:
         # Publish event
         event = SagaCompensated(
             event_id=str(uuid4()),
-            occurred_at=datetime.utcnow(),
+            occurred_at=datetime.now(timezone.utc),
             event_type="SagaCompensated",
             saga_id=saga.id,
             booking_id=saga.booking_id,
@@ -419,9 +431,14 @@ class SagaOrchestrator:
                 reason="Payment failed",
             )
         elif step_name == "PROCESS_PAYMENT":
-            # Refund payment (if payment_id available)
-            # For now, we'll skip this as we don't store payment_id
-            logger.info("Payment refund would be triggered here")
+            if saga.payment_id:
+                await self.payment_gateway.refund_payment(
+                    payment_id=saga.payment_id,
+                    amount=saga.amount,
+                )
+                logger.info(f"Payment {saga.payment_id} refunded successfully")
+            else:
+                logger.warning("Cannot refund: no payment_id stored in saga")
         elif step_name == "CONFIRM_BOOKING":
             # Cancel booking
             await self.booking_service.cancel_booking(
