@@ -12,9 +12,9 @@ Fase 1 - Event Service:        ████████████████�
 Fase 2 - Booking Service:      ████████████████████ 100%
 Fase 3 - Payment Service:      ████████████████████ 100%
 Fase 4 - Notification Service: ████████████████████ 100%
-Fase 5 - Integración Final:    ██████████████████░░  90%
+Fase 5 - Integración Final:    ████████████████████ 100%
 -------------------------------------------
-TOTAL:                         ████████████████████  98%
+TOTAL:                         ████████████████████ 100%
 ```
 
 ---
@@ -33,7 +33,9 @@ TOTAL:                         ████████████████�
 - [x] Venue endpoints: `POST /api/v1/venues`, `GET /api/v1/venues`, `GET /api/v1/venues/{id}`
 - [x] GlobalExceptionHandler: 404 (not found), 409 (invalid state), 400 (bad request)
 - [x] Flyway migrations: V1 (events table), V2 (venues table + location columns)
-- [x] 34 tests unitarios pasando (7 Event + 8 Venue + 3 Create + 6 Publish + 6 Cancel + 4 Get)
+- [x] 34 tests unitarios + 3 integration tests pasando (37 total)
+- [x] Validación @Valid con Bean Validation en EventController
+- [x] CloudWatch observability (logback-spring.xml)
 - [x] Scripts: `init-localstack.sh` (RDS), `init-eventbridge.sh` (EventBridge)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -51,7 +53,11 @@ TOTAL:                         ████████████████�
 - [x] Application Layer — Queries: GetBookingByIdQuery, GetBookingsByUserQuery, GetBookingsByEventQuery + sus Handlers
 - [x] Infrastructure Layer: DynamoDB Write Model, DynamoDB Read Model con GSI, BookingMapper, EventBridge Publisher
 - [x] 6 endpoints REST: `POST /bookings`, `POST /bookings/:id/confirm`, `POST /bookings/:id/cancel`, `GET /bookings/:id`, `GET /bookings/user/:userId`, `GET /bookings/event/:eventId`
-- [x] 141 tests unitarios pasando (21 suites) — **83.67% cobertura**
+- [x] 195 tests unitarios + 7 integration tests (202 total, 27 suites)
+- [x] EventBridge Consumer via SQS (EventCreated/EventCancelled)
+- [x] EventAvailability tracking (DynamoDB)
+- [x] Contract tests (API + Event schemas)
+- [x] CloudWatch observability logger
 - [x] Script: `init-dynamodb.sh` (tabla Bookings con GSI)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -70,7 +76,9 @@ TOTAL:                         ████████████████�
 - [x] 4 endpoints REST: `POST /api/v1/sagas`, `GET /api/v1/sagas/{id}`, `GET /api/v1/sagas`, `POST /api/v1/sagas/{id}/compensate`
 - [x] Payment refund implementado en compensación (usa PaymentGateway.refund_payment)
 - [x] PaymentAttempt tracking: registra cada intento de pago con status y payment_id
-- [x] 117 tests unitarios pasando — **78.83% cobertura**
+- [x] 153 tests unitarios + 10 integration tests (163 total) — **84.60% cobertura**
+- [x] Contract tests (event schemas + booking API)
+- [x] CloudWatch observability logger
 - [x] Script: `init-payment-dynamodb.sh` (tabla payment-sagas con GSI)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -89,8 +97,9 @@ TOTAL:                         ████████████████�
 - [x] **Rate Limiting:** Token Bucket (5 msgs/seg, burst 10) — configurable vía `RATE_LIMIT_PER_SECOND` y `RATE_LIMIT_BURST`
 - [x] Dead Letter Queue (DLQ): mensajes pasan a DLQ tras 3 fallos
 - [x] Graceful shutdown (SIGINT, SIGTERM)
-- [x] 73 tests unitarios pasando (incluye 7 tests de rate limiter + 19 tests SQS consumer)
-- [x] Cobertura **82.08%** ✅
+- [x] 73 tests unitarios + 4 integration tests (77 total)
+- [x] Cobertura **78.04%** ✅
+- [x] CloudWatch observability logger
 - [x] Script: `init-notification-sqs.sh` (notification-queue + notification-dlq)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -112,14 +121,18 @@ TOTAL:                         ████████████████�
 ```
 
 ### ✅ Completado:
-- [x] Script `init-eventbridge-rules.sh` con 5 reglas EventBridge
+- [x] Script `init-eventbridge-rules.sh` con 7 reglas EventBridge (5 notificación + 2 booking)
 - [x] Payment Service se conecta a Booking Service (HTTP: confirm/cancel)
 - [x] Colección Postman con todos los endpoints (`postman-collection.json`)
 - [x] Script E2E test (`test-e2e.sh`) — prueba happy path, cancelación, y CQRS
 - [x] Seed data script (`seed-data.sh`) para poblar datos de prueba
+- [x] Flujo E2E verificado con Docker (saga completa funcional)
+- [x] Integration tests con LocalStack en los 4 servicios
+- [x] Contract tests entre servicios (Payment↔Booking)
+- [x] CloudWatch observability en los 4 servicios
+- [x] EventBridge consumer en Booking Service (availability tracking)
 
-### ⏳ Pendiente:
-- [ ] Ejecutar E2E test con los 4 servicios levantados y documentar resultados
+### ✅ Pendiente: Ninguno
 
 ---
 
@@ -127,8 +140,10 @@ TOTAL:                         ████████████████�
 
 ### Código ✅
 - [x] 4 microservicios funcionales con sus patrones correctos
-- [x] Tests unitarios (34 + 141 + 117 + 73 = **365 tests** en total)
-- [x] Cobertura >70% en todos los servicios (Booking 84%, Payment 79%, Notification 82%)
+- [x] Tests unitarios + integración + contrato (37 + 202 + 163 + 77 = **479 tests** en total)
+- [x] Cobertura >70% en todos los servicios (Payment 85%, Notification 78%, Booking ✅)
+- [x] Integration tests con LocalStack (auto-skip si Docker no corre)
+- [x] Contract tests entre servicios (Payment↔Booking API + event schemas)
 - [x] Scripts de infraestructura (`init-*.sh`) para cada servicio
 - [x] Docker Compose para levantar LocalStack
 - [x] READMEs con instrucciones paso a paso (Git Bash)
@@ -143,7 +158,7 @@ TOTAL:                         ████████████████�
 ### Demo 🔄
 - [x] Reglas EventBridge configuradas (script)
 - [x] Script de seed data para datos de prueba
-- [ ] Prueba end-to-end con resultados documentados
+- [x] Prueba end-to-end con resultados documentados ✅
 
 ---
 
@@ -153,10 +168,12 @@ TOTAL:                         ████████████████�
 |--------|----------|------------|
 | `init-localstack.sh` | Event Service | RDS PostgreSQL |
 | `init-eventbridge.sh` | Event Service | Bus EventBridge |
-| `init-eventbridge-rules.sh` | Integración | 5 reglas EventBridge (EDA) |
+| `init-eventbridge-rules.sh` | Integración | 7 reglas EventBridge (EDA) |
 | `init-dynamodb.sh` | Booking Service | Tabla `Bookings` con GSI |
 | `init-payment-dynamodb.sh` | Payment Service | Tabla `payment-sagas` con GSI |
 | `init-notification-sqs.sh` | Notification Service | `notification-queue` + `notification-dlq` |
+| `init-booking-sqs.sh` | Booking Service | `booking-events-queue` + `booking-events-dlq` + `EventAvailability` |
+| `init-cloudwatch.sh` | Todos | 4 log groups CloudWatch |
 | `seed-data.sh` | Todos | Datos de prueba para los 3 almacenes |
 | `test-e2e.sh` | Todos | Prueba E2E del flujo completo |
 
