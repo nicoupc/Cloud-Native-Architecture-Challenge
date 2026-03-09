@@ -33,7 +33,7 @@ TOTAL:                         ████████████████�
 - [x] Venue endpoints: `POST /api/v1/venues`, `GET /api/v1/venues`, `GET /api/v1/venues/{id}`
 - [x] GlobalExceptionHandler: 404 (not found), 409 (invalid state), 400 (bad request)
 - [x] Flyway migrations: V1 (events table), V2 (venues table + location columns)
-- [x] 18 tests unitarios pasando (10 Event + 8 Venue)
+- [x] 34 tests unitarios pasando (7 Event + 8 Venue + 3 Create + 6 Publish + 6 Cancel + 4 Get)
 - [x] Scripts: `init-localstack.sh` (RDS), `init-eventbridge.sh` (EventBridge)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -51,7 +51,7 @@ TOTAL:                         ████████████████�
 - [x] Application Layer — Queries: GetBookingByIdQuery, GetBookingsByUserQuery, GetBookingsByEventQuery + sus Handlers
 - [x] Infrastructure Layer: DynamoDB Write Model, DynamoDB Read Model con GSI, BookingMapper, EventBridge Publisher
 - [x] 6 endpoints REST: `POST /bookings`, `POST /bookings/:id/confirm`, `POST /bookings/:id/cancel`, `GET /bookings/:id`, `GET /bookings/user/:userId`, `GET /bookings/event/:eventId`
-- [x] 75 tests unitarios pasando (8 suites)
+- [x] 141 tests unitarios pasando (21 suites) — **83.67% cobertura**
 - [x] Script: `init-dynamodb.sh` (tabla Bookings con GSI)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -70,7 +70,7 @@ TOTAL:                         ████████████████�
 - [x] 4 endpoints REST: `POST /api/v1/sagas`, `GET /api/v1/sagas/{id}`, `GET /api/v1/sagas`, `POST /api/v1/sagas/{id}/compensate`
 - [x] Payment refund implementado en compensación (usa PaymentGateway.refund_payment)
 - [x] PaymentAttempt tracking: registra cada intento de pago con status y payment_id
-- [x] 74 tests unitarios pasando
+- [x] 117 tests unitarios pasando — **78.83% cobertura**
 - [x] Script: `init-payment-dynamodb.sh` (tabla payment-sagas con GSI)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -89,8 +89,8 @@ TOTAL:                         ████████████████�
 - [x] **Rate Limiting:** Token Bucket (5 msgs/seg, burst 10) — configurable vía `RATE_LIMIT_PER_SECOND` y `RATE_LIMIT_BURST`
 - [x] Dead Letter Queue (DLQ): mensajes pasan a DLQ tras 3 fallos
 - [x] Graceful shutdown (SIGINT, SIGTERM)
-- [x] 54 tests unitarios pasando (incluye 7 tests de rate limiter)
-- [x] Cobertura >70%
+- [x] 73 tests unitarios pasando (incluye 7 tests de rate limiter + 19 tests SQS consumer)
+- [x] Cobertura **82.08%** ✅
 - [x] Script: `init-notification-sqs.sh` (notification-queue + notification-dlq)
 - [x] README con instrucciones Git Bash paso a paso ✅
 
@@ -127,8 +127,8 @@ TOTAL:                         ████████████████�
 
 ### Código ✅
 - [x] 4 microservicios funcionales con sus patrones correctos
-- [x] Tests unitarios (18 + 75 + 74 + 54 = **221 tests** en total)
-- [x] Cobertura >70% en todos los servicios
+- [x] Tests unitarios (34 + 141 + 117 + 73 = **365 tests** en total)
+- [x] Cobertura >70% en todos los servicios (Booking 84%, Payment 79%, Notification 82%)
 - [x] Scripts de infraestructura (`init-*.sh`) para cada servicio
 - [x] Docker Compose para levantar LocalStack
 - [x] READMEs con instrucciones paso a paso (Git Bash)
