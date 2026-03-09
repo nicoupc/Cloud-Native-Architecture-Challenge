@@ -4,12 +4,18 @@ Payment Service - Main Application
 FastAPI application with dependency injection for Saga Pattern.
 """
 
+import logging
 import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from .application.saga_orchestrator import SagaOrchestrator
+from .infrastructure.logging.cloudwatch_logger import setup_cloudwatch_logging
+
+# Configure basic logging and CloudWatch
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+setup_cloudwatch_logging()
 from .infrastructure.persistence.dynamodb_saga_repository import DynamoDBSagaRepository
 from .infrastructure.messaging.eventbridge_publisher import EventBridgePublisher
 from .infrastructure.gateway.mock_payment_gateway import MockPaymentGateway

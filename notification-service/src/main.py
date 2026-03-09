@@ -22,6 +22,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
+from .infrastructure.logging.cloudwatch_logger import setup_cloudwatch_logging
+setup_cloudwatch_logging()
+
 logger = logging.getLogger(__name__)
 
 

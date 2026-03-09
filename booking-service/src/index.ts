@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from './infrastructure/logging/logger';
 import { createDynamoDBClient, createEventBridgeClient, createSQSClient, config } from './infrastructure/config/aws-config';
 import { DynamoDBBookingRepository } from './infrastructure/persistence/DynamoDBBookingRepository';
 import { DynamoDBBookingQueryRepository } from './infrastructure/persistence/DynamoDBBookingQueryRepository';
@@ -36,7 +37,7 @@ import { BookingController } from './infrastructure/api/BookingController';
  */
 
 async function bootstrap() {
-  console.log('🚀 Starting Booking Service...');
+  logger.info('🚀 Starting Booking Service...');
 
   // 1. Create AWS clients
   const dynamoClient = createDynamoDBClient();
@@ -142,18 +143,18 @@ async function bootstrap() {
   // Start server
   const port = config.server.port;
   app.listen(port, () => {
-    console.log('✅ Booking Service started successfully!');
-    console.log(`📡 Server listening on port ${port}`);
-    console.log(`🏥 Health check: http://localhost:${port}/health`);
-    console.log(`📚 API base URL: http://localhost:${port}/api/v1`);
-    console.log('');
-    console.log('📋 Available endpoints:');
-    console.log('   POST   /api/v1/bookings');
-    console.log('   POST   /api/v1/bookings/:id/confirm');
-    console.log('   POST   /api/v1/bookings/:id/cancel');
-    console.log('   GET    /api/v1/bookings/:id');
-    console.log('   GET    /api/v1/bookings/user/:userId');
-    console.log('   GET    /api/v1/bookings/event/:eventId');
+    logger.info('✅ Booking Service started successfully!');
+    logger.info(`📡 Server listening on port ${port}`);
+    logger.info(`🏥 Health check: http://localhost:${port}/health`);
+    logger.info(`📚 API base URL: http://localhost:${port}/api/v1`);
+    logger.info('');
+    logger.info('📋 Available endpoints:');
+    logger.info('   POST   /api/v1/bookings');
+    logger.info('   POST   /api/v1/bookings/:id/confirm');
+    logger.info('   POST   /api/v1/bookings/:id/cancel');
+    logger.info('   GET    /api/v1/bookings/:id');
+    logger.info('   GET    /api/v1/bookings/user/:userId');
+    logger.info('   GET    /api/v1/bookings/event/:eventId');
     console.log('');
     // Start SQS consumer in background
     sqsConsumer.start().catch(err => console.error('SQS Consumer error:', err));

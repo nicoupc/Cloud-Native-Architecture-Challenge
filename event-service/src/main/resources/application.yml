@@ -43,8 +43,4 @@ aws:
 
 # Logging
 logging:
-  level:
-    com.eventmanagement: DEBUG
-    org.springframework: INFO
-    org.hibernate.SQL: DEBUG
-    org.flywaydb: INFO
+  config: classpath:logback-spring.xml
