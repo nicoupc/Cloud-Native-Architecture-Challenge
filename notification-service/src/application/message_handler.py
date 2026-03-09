@@ -68,6 +68,7 @@ class MessageHandler:
                 "PaymentProcessed": NotificationType.PAYMENT_PROCESSED,
                 "PaymentFailed": NotificationType.PAYMENT_FAILED,
                 "EventPublished": NotificationType.EVENT_PUBLISHED,
+                "EventCancelled": NotificationType.EVENT_CANCELLED,
             }
             
             notification_type = type_mapping.get(detail_type)

@@ -4,7 +4,7 @@ Notification Aggregate Root
 Represents a notification to be sent to a user.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 from .value_objects import (
@@ -41,7 +41,7 @@ class Notification:
         self._body = body
         self._template_data = template_data or TemplateData({})
         self._status = NotificationStatus.PENDING
-        self._created_at = datetime.utcnow()
+        self._created_at = datetime.now(timezone.utc)
         self._sent_at: Optional[datetime] = None
         self._failed_at: Optional[datetime] = None
         self._error_message: Optional[str] = None
@@ -101,13 +101,13 @@ class Notification:
             return  # Already sent, idempotent
         
         self._status = NotificationStatus.SENT
-        self._sent_at = datetime.utcnow()
+        self._sent_at = datetime.now(timezone.utc)
         self._error_message = None
     
     def mark_as_failed(self, error_message: str) -> None:
         """Mark notification as failed"""
         self._status = NotificationStatus.FAILED
-        self._failed_at = datetime.utcnow()
+        self._failed_at = datetime.now(timezone.utc)
         self._error_message = error_message
         self._retry_count += 1
     

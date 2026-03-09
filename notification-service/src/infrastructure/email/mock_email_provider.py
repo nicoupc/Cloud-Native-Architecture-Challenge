@@ -8,7 +8,7 @@ import logging
 import asyncio
 import random
 from typing import List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ...domain import EmailProvider, EmailAddress, EmailSubject, EmailBody
 
@@ -64,7 +64,7 @@ class MockEmailProvider(EmailProvider):
                 "recipient": str(recipient),
                 "subject": str(subject),
                 "body": str(body),
-                "sent_at": datetime.utcnow().isoformat()
+                "sent_at": datetime.now(timezone.utc).isoformat()
             }
             self.sent_emails.append(email_record)
             

@@ -132,7 +132,7 @@ INFO - Message processed successfully
 ```bash
 # Con (venv) activado, desde la carpeta notification-service
 pytest tests/unit/ --no-cov -q
-# Resultado esperado: 47 passed
+# Resultado esperado: 54 passed
 ```
 
 ---

@@ -7,7 +7,7 @@ Orchestrates notification processing workflow.
 import logging
 from typing import Optional
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..domain import (
     Notification,
@@ -112,7 +112,7 @@ class NotificationProcessor:
                 # Create domain event
                 event = NotificationSent(
                     event_id=str(uuid4()),
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.now(timezone.utc),
                     notification_id=notification.notification_id,
                     notification_type=notification.notification_type,
                     recipient=str(notification.recipient)
@@ -127,7 +127,7 @@ class NotificationProcessor:
                 # Create domain event
                 event = NotificationFailed(
                     event_id=str(uuid4()),
-                    occurred_at=datetime.utcnow(),
+                    occurred_at=datetime.now(timezone.utc),
                     notification_id=notification.notification_id,
                     notification_type=notification.notification_type,
                     recipient=str(notification.recipient),
