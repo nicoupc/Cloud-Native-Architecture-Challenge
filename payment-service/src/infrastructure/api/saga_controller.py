@@ -203,6 +203,8 @@ async def compensate_saga(
         
         return saga_to_response(compensated_saga)
         
+    except HTTPException:
+        raise
     except SagaNotFoundException as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
