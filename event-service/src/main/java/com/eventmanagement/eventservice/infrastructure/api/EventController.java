@@ -4,6 +4,10 @@ import com.eventmanagement.eventservice.application.service.CancelEventService;
 import com.eventmanagement.eventservice.application.service.CreateEventService;
 import com.eventmanagement.eventservice.application.service.GetEventService;
 import com.eventmanagement.eventservice.domain.model.*;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +42,7 @@ public class EventController {
      * POST /api/v1/events - Create a new event
      */
     @PostMapping
-    public ResponseEntity<EventResponse> createEvent(@RequestBody CreateEventRequest request) {
+    public ResponseEntity<EventResponse> createEvent(@Valid @RequestBody CreateEventRequest request) {
         EventId venueId = (request.venueId() != null && !request.venueId().isBlank())
             ? new EventId(java.util.UUID.fromString(request.venueId()))
             : EventId.generate();
@@ -133,12 +137,24 @@ public class EventController {
 }
 
 record CreateEventRequest(
+    @NotBlank(message = "Event name is required")
     String name,
+
+    @NotBlank(message = "Event description is required")
     String description,
+
+    @NotNull(message = "Event type is required")
     EventType type,
+
+    @NotNull(message = "Event date is required")
     LocalDateTime eventDate,
+
+    @Positive(message = "Capacity must be greater than 0")
     int capacity,
+
+    @NotBlank(message = "Price is required")
     String price,
+
     String venueId,
     String locationVenue,
     String locationCity,
