@@ -49,6 +49,11 @@ public class EventController {
             request.type(),
             venueId,
             request.eventDate(),
+            new Location(
+                request.locationVenue() != null ? request.locationVenue() : "TBD",
+                request.locationCity() != null ? request.locationCity() : "TBD",
+                request.locationCountry() != null ? request.locationCountry() : "TBD"
+            ),
             new Capacity(request.capacity()),
             new Price(new BigDecimal(request.price()), "USD")
         );
@@ -118,6 +123,7 @@ public class EventController {
             event.getDescription(),
             event.getType().toString(),
             event.getEventDate().toString(),
+            event.getLocation() != null ? event.getLocation().toString() : null,
             event.getTotalCapacity().value(),
             event.getAvailableCapacity().value(),
             event.getPrice().amount().toString(),
@@ -133,7 +139,10 @@ record CreateEventRequest(
     LocalDateTime eventDate,
     int capacity,
     String price,
-    String venueId
+    String venueId,
+    String locationVenue,
+    String locationCity,
+    String locationCountry
 ) {}
 
 record CancelEventRequest(
@@ -146,6 +155,7 @@ record EventResponse(
     String description,
     String type,
     String eventDate,
+    String location,
     int totalCapacity,
     int availableCapacity,
     String price,

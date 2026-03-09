@@ -44,6 +44,15 @@ public class EventEntity {
     @Column(name = "event_date", nullable = false)
     private LocalDateTime eventDate;
     
+    @Column(name = "location_venue", nullable = false, length = 200)
+    private String locationVenue;
+    
+    @Column(name = "location_city", nullable = false, length = 100)
+    private String locationCity;
+    
+    @Column(name = "location_country", nullable = false, length = 100)
+    private String locationCountry;
+    
     @Column(name = "total_capacity", nullable = false)
     private Integer totalCapacity;
     
@@ -78,6 +87,9 @@ public class EventEntity {
         EventTypeEnum type,
         UUID venueId,
         LocalDateTime eventDate,
+        String locationVenue,
+        String locationCity,
+        String locationCountry,
         Integer totalCapacity,
         Integer availableCapacity,
         BigDecimal priceAmount,
@@ -92,6 +104,9 @@ public class EventEntity {
         this.type = type;
         this.venueId = venueId;
         this.eventDate = eventDate;
+        this.locationVenue = locationVenue;
+        this.locationCity = locationCity;
+        this.locationCountry = locationCountry;
         this.totalCapacity = totalCapacity;
         this.availableCapacity = availableCapacity;
         this.priceAmount = priceAmount;
@@ -108,6 +123,9 @@ public class EventEntity {
     public EventTypeEnum getType() { return type; }
     public UUID getVenueId() { return venueId; }
     public LocalDateTime getEventDate() { return eventDate; }
+    public String getLocationVenue() { return locationVenue; }
+    public String getLocationCity() { return locationCity; }
+    public String getLocationCountry() { return locationCountry; }
     public Integer getTotalCapacity() { return totalCapacity; }
     public Integer getAvailableCapacity() { return availableCapacity; }
     public BigDecimal getPriceAmount() { return priceAmount; }

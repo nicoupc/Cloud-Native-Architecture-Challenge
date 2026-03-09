@@ -49,7 +49,9 @@ class CreateEventServiceTest {
         
         // Crear el evento usando el dominio
         Event event = Event.create(
-            name, description, type, venueId, eventDate, capacity, price
+            name, description, type, venueId, eventDate,
+            new Location("Estadio", "Lima", "Peru"),
+            capacity, price
         );
         
         // Act
@@ -84,7 +86,8 @@ class CreateEventServiceTest {
                 "Descripción",
                 EventType.CONCERT,
                 EventId.generate(),
-                pastDate, // ← Fecha inválida
+                pastDate,
+                new Location("Venue", "City", "Country"),
                 new Capacity(100),
                 Price.usd(50.00)
             );
@@ -101,15 +104,16 @@ class CreateEventServiceTest {
         EventId venue2 = EventId.generate();
         LocalDateTime futureDate = LocalDateTime.now().plusDays(30);
         
-        // Crear eventos usando el dominio
         Event event1 = Event.create(
             "Concierto A", "Desc A", EventType.CONCERT,
-            venue1, futureDate, new Capacity(1000), Price.usd(50.00)
+            venue1, futureDate, new Location("V1", "C1", "P1"),
+            new Capacity(1000), Price.usd(50.00)
         );
         
         Event event2 = Event.create(
             "Concierto B", "Desc B", EventType.CONFERENCE,
-            venue2, futureDate, new Capacity(2000), Price.usd(100.00)
+            venue2, futureDate, new Location("V2", "C2", "P2"),
+            new Capacity(2000), Price.usd(100.00)
         );
         
         // Act

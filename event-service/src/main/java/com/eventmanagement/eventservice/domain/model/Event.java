@@ -7,20 +7,16 @@ import java.time.LocalDateTime;
  * Aggregate Root: Event
  * 
  * Representa un evento (concierto, conferencia, deporte) con todas sus reglas de negocio.
- * 
- * ¿Por qué es una clase y no un record?
- * - Porque su estado PUEDE cambiar (DRAFT → PUBLISHED → CANCELLED)
- * - Tiene comportamiento complejo (métodos de negocio)
  */
 public class Event {
     
-    // Atributos privados (nadie puede cambiarlos directamente)
     private final EventId id;
     private String name;
     private String description;
     private final EventType type;
     private final EventId venueId;
-    private final LocalDateTime eventDate;
+    private final EventDate eventDate;
+    private final Location location;
     private final Capacity totalCapacity;
     private Capacity availableCapacity;
     private Price price;
@@ -28,17 +24,14 @@ public class Event {
     private Instant createdAt;
     private Instant updatedAt;
     
-    /**
-     * Constructor privado.
-     * Solo se puede crear un Event usando Event.create() o Event.reconstruct().
-     */
     private Event(
         EventId id,
         String name,
         String description,
         EventType type,
         EventId venueId,
-        LocalDateTime eventDate,
+        EventDate eventDate,
+        Location location,
         Capacity totalCapacity,
         Price price
     ) {
@@ -48,10 +41,11 @@ public class Event {
         this.type = type;
         this.venueId = venueId;
         this.eventDate = eventDate;
+        this.location = location;
         this.totalCapacity = totalCapacity;
-        this.availableCapacity = totalCapacity; // Al inicio, toda la capacidad está disponible
+        this.availableCapacity = totalCapacity;
         this.price = price;
-        this.status = EventStatus.DRAFT; // Siempre empieza en DRAFT
+        this.status = EventStatus.DRAFT;
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
@@ -70,7 +64,8 @@ public class Event {
         String description,
         EventType type,
         EventId venueId,
-        LocalDateTime eventDate,
+        EventDate eventDate,
+        Location location,
         Capacity totalCapacity,
         Capacity availableCapacity,
         Price price,
@@ -78,7 +73,7 @@ public class Event {
         Instant createdAt,
         Instant updatedAt
     ) {
-        Event event = new Event(id, name, description, type, venueId, eventDate, totalCapacity, price);
+        Event event = new Event(id, name, description, type, venueId, eventDate, location, totalCapacity, price);
         event.availableCapacity = availableCapacity;
         event.status = status;
         event.createdAt = createdAt;
@@ -106,12 +101,12 @@ public class Event {
         EventType type,
         EventId venueId,
         LocalDateTime eventDate,
+        Location location,
         Capacity totalCapacity,
         Price price
     ) {
-        // Validaciones de negocio
         validateName(name);
-        validateEventDate(eventDate);
+        EventDate validatedDate = EventDate.ofFuture(eventDate);
         
         return new Event(
             EventId.generate(),
@@ -119,7 +114,8 @@ public class Event {
             description,
             type,
             venueId,
-            eventDate,
+            validatedDate,
+            location,
             totalCapacity,
             price
         );
@@ -161,22 +157,14 @@ public class Event {
         }
     }
     
-    private static void validateEventDate(LocalDateTime eventDate) {
-        if (eventDate == null) {
-            throw new IllegalArgumentException("La fecha del evento no puede ser null");
-        }
-        if (eventDate.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("La fecha del evento debe ser futura");
-        }
-    }
-    
     // Getters (solo lectura)
     public EventId getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
     public EventType getType() { return type; }
     public EventId getVenueId() { return venueId; }
-    public LocalDateTime getEventDate() { return eventDate; }
+    public EventDate getEventDate() { return eventDate; }
+    public Location getLocation() { return location; }
     public Capacity getTotalCapacity() { return totalCapacity; }
     public Capacity getAvailableCapacity() { return availableCapacity; }
     public Price getPrice() { return price; }

@@ -24,11 +24,12 @@ class EventTest {
         EventType type = EventType.CONCERT;
         EventId venueId = EventId.generate();
         LocalDateTime eventDate = LocalDateTime.now().plusDays(30);
+        Location location = new Location("Estadio Nacional", "Lima", "Peru");
         Capacity capacity = new Capacity(5000);
         Price price = Price.usd(75.00);
         
         // Act (Ejecutar acción)
-        Event event = Event.create(name, description, type, venueId, eventDate, capacity, price);
+        Event event = Event.create(name, description, type, venueId, eventDate, location, capacity, price);
         
         // Assert (Verificar resultados)
         assertNotNull(event.getId(), "El ID no debe ser null");
@@ -36,7 +37,8 @@ class EventTest {
         assertEquals(description, event.getDescription());
         assertEquals(type, event.getType());
         assertEquals(venueId, event.getVenueId());
-        assertEquals(eventDate, event.getEventDate());
+        assertEquals(eventDate, event.getEventDate().value());
+        assertEquals(location, event.getLocation());
         assertEquals(capacity, event.getTotalCapacity());
         assertEquals(capacity, event.getAvailableCapacity(), "Capacidad disponible debe ser igual a total al inicio");
         assertEquals(price, event.getPrice());
@@ -60,6 +62,7 @@ class EventTest {
                 EventType.CONCERT,
                 EventId.generate(),
                 pastDate, // ← Fecha inválida
+                new Location("Venue", "City", "Country"),
                 new Capacity(100),
                 Price.usd(50.00)
             );
@@ -78,6 +81,7 @@ class EventTest {
                 EventType.CONCERT,
                 EventId.generate(),
                 LocalDateTime.now().plusDays(30),
+                new Location("Venue", "City", "Country"),
                 new Capacity(100),
                 Price.usd(50.00)
             );
@@ -155,6 +159,7 @@ class EventTest {
             EventType.CONCERT,
             EventId.generate(),
             LocalDateTime.now().plusDays(30),
+            new Location("Venue Test", "Ciudad Test", "Pais Test"),
             new Capacity(1000),
             Price.usd(50.00)
         );
