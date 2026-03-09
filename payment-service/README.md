@@ -134,7 +134,7 @@ curl -X POST http://localhost:3002/api/v1/sagas/{sagaId}/compensate
 ```bash
 # Con (venv) activado, desde la carpeta payment-service
 pytest tests/unit/ --no-cov -q
-# Resultado esperado: 74 passed
+# Resultado esperado: 117 passed (78.83% statement coverage)
 ```
 
 ---
@@ -187,4 +187,4 @@ Cliente
 - ✅ Application Layer — Saga Orchestrator
 - ✅ Infrastructure Layer — DynamoDB, EventBridge, Mock Payment Gateway
 - ✅ REST API — 4 endpoints
-- ✅ Tests unitarios (74 tests)
+- ✅ Tests unitarios (117 tests, 78.83% statement coverage)

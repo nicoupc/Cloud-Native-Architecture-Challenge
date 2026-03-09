@@ -14,6 +14,7 @@ Recibe mensajes de una cola SQS y **envía notificaciones por email** (simuladas
 ```
 SQS Queue
    │
+   ├── BOOKING_CREATED    → "Tu reserva fue creada"
    ├── BOOKING_CONFIRMED  → "Tu reserva fue confirmada"
    ├── BOOKING_CANCELLED  → "Tu reserva fue cancelada"
    ├── PAYMENT_PROCESSED  → "Tu pago fue procesado"
@@ -132,7 +133,7 @@ INFO - Message processed successfully
 ```bash
 # Con (venv) activado, desde la carpeta notification-service
 pytest tests/unit/ --no-cov -q
-# Resultado esperado: 54 passed
+# Resultado esperado: 73 passed (82.08% statement coverage)
 ```
 
 ---
@@ -189,4 +190,4 @@ Otros servicios
 - ✅ Application Layer — NotificationProcessor, MessageHandler
 - ✅ Infrastructure Layer — SQSConsumer, MockEmailProvider
 - ✅ REST API — Health check en puerto 3003
-- ✅ Tests unitarios (47 tests)
+- ✅ Tests unitarios (73 tests, 82.08% statement coverage)

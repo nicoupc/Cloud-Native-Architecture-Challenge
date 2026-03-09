@@ -211,7 +211,7 @@ aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name Bookings
 - [x] Application Layer (100%)
 - [x] Infrastructure Layer (100%)
 - [x] REST API (100%)
-- [x] Tests unitarios (41 tests passing)
+- [x] Tests unitarios (141 tests across 21 test suites, 83.67% coverage)
 - [ ] Tests de integración
 - [ ] Integración con Event Service
 

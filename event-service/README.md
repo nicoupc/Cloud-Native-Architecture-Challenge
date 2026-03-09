@@ -101,7 +101,15 @@ cd event-service
 mvn test
 ```
 
-Resultado esperado: `Tests run: 10, Failures: 0, Errors: 0`
+Resultado esperado: `Tests run: 34, Failures: 0, Errors: 0`
+
+Test classes:
+- `EventTest` (7 tests) — Domain model
+- `VenueTest` (8 tests) — Value objects
+- `CreateEventServiceTest` (3 tests) — Create use case
+- `PublishEventServiceTest` (6 tests) — Publish use case
+- `CancelEventServiceTest` (6 tests) — Cancel use case
+- `GetEventServiceTest` (4 tests) — Query use case
 
 ---
 
@@ -177,7 +185,7 @@ También puedes usar **DBeaver** (GUI):
 - ✅ Event-Driven Architecture (EventBridge)
 - ✅ PostgreSQL RDS en LocalStack
 - ✅ Flyway Migrations
-- ✅ Tests unitarios (10 tests)
+- ✅ Tests unitarios (34 tests across 6 test classes)
 - ✅ Transacciones distribuidas con @Transactional
 
 **Preparado para migrar a AWS:** Solo cambiar el datasource URL a RDS real y remover el endpoint-url de EventBridge.
