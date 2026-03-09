@@ -43,16 +43,16 @@ echo ""
 NOTIFICATION_QUEUE_ARN="arn:aws:sqs:${REGION}:${ACCOUNT_ID}:notification-queue"
 
 # ─────────────────────────────────────────────
-# Regla 1: PaymentConfirmed → notification-queue
-# Cuando un pago se confirma, notificar al usuario
+# Regla 1: PaymentProcessed → notification-queue
+# Cuando un pago se procesa exitosamente, notificar al usuario
 # ─────────────────────────────────────────────
-echo "📌 Regla 1: PaymentConfirmed → notification-queue"
+echo "📌 Regla 1: PaymentProcessed → notification-queue"
 aws --endpoint-url=$ENDPOINT_URL events put-rule \
     --name "payment-confirmed-to-notifications" \
     --event-bus-name $BUS_NAME \
     --event-pattern '{
         "source": ["payment-service"],
-        "detail-type": ["PaymentConfirmed"]
+        "detail-type": ["PaymentProcessed"]
     }' \
     --state ENABLED \
     --region $REGION > /dev/null
@@ -63,7 +63,7 @@ aws --endpoint-url=$ENDPOINT_URL events put-targets \
     --targets "[{\"Id\":\"notification-queue-target\",\"Arn\":\"${NOTIFICATION_QUEUE_ARN}\"}]" \
     --region $REGION > /dev/null
 
-echo "✅ PaymentConfirmed → notification-queue"
+echo "✅ PaymentProcessed → notification-queue"
 
 # ─────────────────────────────────────────────
 # Regla 2: PaymentFailed → notification-queue

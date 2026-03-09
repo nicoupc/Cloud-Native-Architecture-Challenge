@@ -65,6 +65,7 @@ class MessageHandler:
             type_mapping = {
                 "BookingConfirmed": NotificationType.BOOKING_CONFIRMED,
                 "BookingCancelled": NotificationType.BOOKING_CANCELLED,
+                "BookingCreated": NotificationType.BOOKING_CONFIRMED,
                 "PaymentProcessed": NotificationType.PAYMENT_PROCESSED,
                 "PaymentFailed": NotificationType.PAYMENT_FAILED,
                 "EventPublished": NotificationType.EVENT_PUBLISHED,
@@ -76,9 +77,15 @@ class MessageHandler:
                 logger.warning(f"Unknown detail-type: {detail_type}")
                 return None
             
+            # Use userEmail from event detail, or derive from userId as fallback
+            recipient = detail.get("userEmail")
+            if not recipient:
+                user_id = detail.get("userId") or detail.get("user_id") or "unknown"
+                recipient = f"{user_id}@eventplatform.com"
+            
             return {
                 "notification_type": notification_type,
-                "recipient": detail.get("userEmail"),
+                "recipient": recipient,
                 "template_data": detail
             }
             
