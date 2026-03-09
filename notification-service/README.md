@@ -14,7 +14,7 @@ Recibe mensajes de una cola SQS y **envía notificaciones por email** (simuladas
 ```
 SQS Queue
    │
-   ├── BOOKING_CREATED    → "Tu reserva fue creada"
+   ├── BOOKING_CREATED    → (procesado como confirmación de reserva)
    ├── BOOKING_CONFIRMED  → "Tu reserva fue confirmada"
    ├── BOOKING_CANCELLED  → "Tu reserva fue cancelada"
    ├── PAYMENT_PROCESSED  → "Tu pago fue procesado"
