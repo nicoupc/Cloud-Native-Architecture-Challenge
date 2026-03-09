@@ -42,6 +42,9 @@ echo ""
 # Obtener ARN de la cola de notificaciones
 NOTIFICATION_QUEUE_ARN="arn:aws:sqs:${REGION}:${ACCOUNT_ID}:notification-queue"
 
+# Obtener ARN de la cola de booking
+BOOKING_QUEUE_ARN="arn:aws:sqs:${REGION}:${ACCOUNT_ID}:booking-events-queue"
+
 # ─────────────────────────────────────────────
 # Regla 1: PaymentProcessed → notification-queue
 # Cuando un pago se procesa exitosamente, notificar al usuario
@@ -159,6 +162,53 @@ echo "✅ BookingCreated → notification-queue"
 echo ""
 
 # ─────────────────────────────────────────────
+# Regla 6: EventCreated → booking-events-queue
+# Cuando se crea un evento, registrar disponibilidad en Booking Service
+# ─────────────────────────────────────────────
+echo "📌 Regla 6: EventCreated → booking-events-queue"
+aws --endpoint-url=$ENDPOINT_URL events put-rule \
+    --name "event-created-to-booking" \
+    --event-bus-name $BUS_NAME \
+    --event-pattern '{
+        "source": ["event-service"],
+        "detail-type": ["EventCreated"]
+    }' \
+    --state ENABLED \
+    --region $REGION > /dev/null
+
+aws --endpoint-url=$ENDPOINT_URL events put-targets \
+    --rule "event-created-to-booking" \
+    --event-bus-name $BUS_NAME \
+    --targets "[{\"Id\":\"booking-queue-target\",\"Arn\":\"${BOOKING_QUEUE_ARN}\"}]" \
+    --region $REGION > /dev/null
+
+echo "✅ EventCreated → booking-events-queue"
+
+# ─────────────────────────────────────────────
+# Regla 7: EventCancelled → booking-events-queue
+# Cuando se cancela un evento, cancelar reservas en Booking Service
+# ─────────────────────────────────────────────
+echo "📌 Regla 7: EventCancelled → booking-events-queue"
+aws --endpoint-url=$ENDPOINT_URL events put-rule \
+    --name "event-cancelled-to-booking" \
+    --event-bus-name $BUS_NAME \
+    --event-pattern '{
+        "source": ["event-service"],
+        "detail-type": ["EventCancelled"]
+    }' \
+    --state ENABLED \
+    --region $REGION > /dev/null
+
+aws --endpoint-url=$ENDPOINT_URL events put-targets \
+    --rule "event-cancelled-to-booking" \
+    --event-bus-name $BUS_NAME \
+    --targets "[{\"Id\":\"booking-queue-target\",\"Arn\":\"${BOOKING_QUEUE_ARN}\"}]" \
+    --region $REGION > /dev/null
+
+echo "✅ EventCancelled → booking-events-queue"
+echo ""
+
+# ─────────────────────────────────────────────
 # Mostrar resumen
 # ─────────────────────────────────────────────
 echo "📋 Reglas de EventBridge configuradas:"
@@ -173,5 +223,6 @@ echo "🔗 Arquitectura EDA configurada:"
 echo "   Event Service   → EventBridge → notification-queue"
 echo "   Booking Service → EventBridge → notification-queue"
 echo "   Payment Service → EventBridge → notification-queue"
+echo "   Booking Service → EventBridge ← Event Service"
 echo ""
 echo "🎉 ¡Reglas de EventBridge listas!"

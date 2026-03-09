@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { EventBridgeClient } from '@aws-sdk/client-eventbridge';
+import { SQSClient } from '@aws-sdk/client-sqs';
 
 /**
  * AWS Configuration for LocalStack
@@ -51,6 +52,18 @@ export function createEventBridgeClient(): EventBridgeClient {
 }
 
 /**
+ * Creates an SQS client
+ */
+export function createSQSClient(): SQSClient {
+  if (isLocalStack) {
+    return new SQSClient(localStackConfig);
+  }
+
+  // Production configuration (uses IAM roles)
+  return new SQSClient({ region });
+}
+
+/**
  * Configuration values
  */
 export const config = {
@@ -60,6 +73,12 @@ export const config = {
   eventbridge: {
     eventBusName: process.env.EVENTBRIDGE_BUS_NAME || 'event-management-bus',
     source: 'booking-service',
+  },
+  sqs: {
+    queueUrl: process.env.BOOKING_QUEUE_URL || 'http://localhost:4566/000000000000/booking-events-queue',
+  },
+  availability: {
+    tableName: process.env.AVAILABILITY_TABLE_NAME || 'EventAvailability',
   },
   server: {
     port: parseInt(process.env.PORT || '3001', 10),

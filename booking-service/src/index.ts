@@ -1,11 +1,15 @@
 import express from 'express';
-import { createDynamoDBClient, createEventBridgeClient, config } from './infrastructure/config/aws-config';
+import { createDynamoDBClient, createEventBridgeClient, createSQSClient, config } from './infrastructure/config/aws-config';
 import { DynamoDBBookingRepository } from './infrastructure/persistence/DynamoDBBookingRepository';
 import { DynamoDBBookingQueryRepository } from './infrastructure/persistence/DynamoDBBookingQueryRepository';
+import { DynamoDBAvailabilityRepository } from './infrastructure/persistence/DynamoDBAvailabilityRepository';
 import { EventBridgePublisher } from './infrastructure/messaging/EventBridgePublisher';
+import { SqsEventConsumer } from './infrastructure/messaging/SqsEventConsumer';
 import { CreateBookingHandler } from './application/command/CreateBookingHandler';
 import { ConfirmBookingHandler } from './application/command/ConfirmBookingHandler';
 import { CancelBookingHandler } from './application/command/CancelBookingHandler';
+import { UpdateAvailabilityHandler } from './application/command/UpdateAvailabilityHandler';
+import { CancelEventBookingsHandler } from './application/command/CancelEventBookingsHandler';
 import { GetBookingByIdHandler } from './application/query/GetBookingByIdHandler';
 import { GetBookingsByUserHandler } from './application/query/GetBookingsByUserHandler';
 import { GetBookingsByEventHandler } from './application/query/GetBookingsByEventHandler';
@@ -37,6 +41,7 @@ async function bootstrap() {
   // 1. Create AWS clients
   const dynamoClient = createDynamoDBClient();
   const eventBridgeClient = createEventBridgeClient();
+  const sqsClient = createSQSClient();
 
   // 2. Create infrastructure adapters (OUTPUT ports)
   const bookingRepository = new DynamoDBBookingRepository(
@@ -55,11 +60,17 @@ async function bootstrap() {
     config.eventbridge.source
   );
 
+  const availabilityRepository = new DynamoDBAvailabilityRepository(
+    dynamoClient,
+    config.availability.tableName
+  );
+
   // 3. Create application handlers (inject dependencies)
   // Command Handlers (Write Side)
   const createBookingHandler = new CreateBookingHandler(
     bookingRepository,
-    eventPublisher
+    eventPublisher,
+    availabilityRepository
   );
 
   const confirmBookingHandler = new ConfirmBookingHandler(
@@ -95,7 +106,22 @@ async function bootstrap() {
     getBookingsByEventHandler
   );
 
-  // 5. Setup Express server
+  // 5. Create SQS Event Consumer (INPUT port - Event Listener)
+  const updateAvailabilityHandler = new UpdateAvailabilityHandler(availabilityRepository);
+  const cancelEventBookingsHandler = new CancelEventBookingsHandler(
+    availabilityRepository,
+    bookingQueryRepository,
+    bookingRepository,
+    eventPublisher
+  );
+  const sqsConsumer = new SqsEventConsumer(
+    sqsClient,
+    config.sqs.queueUrl,
+    updateAvailabilityHandler,
+    cancelEventBookingsHandler
+  );
+
+  // 6. Setup Express server
   const app = express();
 
   // Middleware
@@ -128,6 +154,9 @@ async function bootstrap() {
     console.log('   GET    /api/v1/bookings/:id');
     console.log('   GET    /api/v1/bookings/user/:userId');
     console.log('   GET    /api/v1/bookings/event/:eventId');
+    console.log('');
+    // Start SQS consumer in background
+    sqsConsumer.start().catch(err => console.error('SQS Consumer error:', err));
   });
 }
 

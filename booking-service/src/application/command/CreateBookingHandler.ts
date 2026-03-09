@@ -6,6 +6,7 @@ import { TicketQuantity } from '../../domain/model/TicketQuantity';
 import { BookingRepository } from '../../domain/port/BookingRepository';
 import { EventPublisher } from '../../domain/port/EventPublisher';
 import { BookingCreated } from '../../domain/event/BookingCreated';
+import { AvailabilityRepository } from '../../domain/port/AvailabilityRepository';
 
 /**
  * CreateBookingHandler - Handles the creation of new bookings
@@ -28,10 +29,19 @@ import { BookingCreated } from '../../domain/event/BookingCreated';
 export class CreateBookingHandler {
   constructor(
     private readonly bookingRepository: BookingRepository,
-    private readonly eventPublisher: EventPublisher
+    private readonly eventPublisher: EventPublisher,
+    private readonly availabilityRepository?: AvailabilityRepository
   ) {}
 
   async handle(command: CreateBookingCommand): Promise<Booking> {
+    // Optional: Check event availability if repository is provided
+    if (this.availabilityRepository) {
+      const availability = await this.availabilityRepository.findByEventId(command.eventId);
+      if (availability && !availability.hasCapacity(command.ticketQuantity)) {
+        throw new Error(`Insufficient ticket availability for event ${command.eventId}`);
+      }
+    }
+
     // 1. Convert command data to Value Objects
     const userId = UserId.from(command.userId);
     const eventId = EventId.from(command.eventId);
