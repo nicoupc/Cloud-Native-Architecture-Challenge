@@ -80,47 +80,50 @@ fi
 # =============================================================================
 banner "Seeding Event Service (PostgreSQL)"
 
+# Calculate future dates dynamically (next year) so events are always valid
+NEXT_YEAR=$(date -d "+1 year" +%Y 2>/dev/null || date -v+1y +%Y 2>/dev/null || echo "2027")
+
 EVENT1_JSON=$(curl -sf -X POST "${EVENT_SERVICE_URL}/api/v1/events" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Summer Rock Festival",
-    "description": "An outdoor rock music festival featuring top bands from around the world.",
-    "type": "CONCERT",
-    "eventDate": "2025-08-15T18:00:00",
-    "capacity": 5000,
-    "price": "75.00",
-    "locationVenue": "Central Park Amphitheatre",
-    "locationCity": "New York",
-    "locationCountry": "USA"
-  }') && ok "Created event: Summer Rock Festival" || fail "Failed to create event 1"
+  -d "{
+    \"name\": \"Summer Rock Festival\",
+    \"description\": \"An outdoor rock music festival featuring top bands from around the world.\",
+    \"type\": \"CONCERT\",
+    \"eventDate\": \"${NEXT_YEAR}-08-15T18:00:00\",
+    \"capacity\": 5000,
+    \"price\": \"75.00\",
+    \"locationVenue\": \"Central Park Amphitheatre\",
+    \"locationCity\": \"New York\",
+    \"locationCountry\": \"USA\"
+  }") && ok "Created event: Summer Rock Festival" || fail "Failed to create event 1"
 
 EVENT2_JSON=$(curl -sf -X POST "${EVENT_SERVICE_URL}/api/v1/events" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Tech Innovation Conference 2025",
-    "description": "A two-day conference on cloud-native, AI, and distributed systems.",
-    "type": "CONFERENCE",
-    "eventDate": "2025-10-20T09:00:00",
-    "capacity": 1200,
-    "price": "199.99",
-    "locationVenue": "Convention Centre",
-    "locationCity": "San Francisco",
-    "locationCountry": "USA"
-  }') && ok "Created event: Tech Innovation Conference 2025" || fail "Failed to create event 2"
+  -d "{
+    \"name\": \"Tech Innovation Conference ${NEXT_YEAR}\",
+    \"description\": \"A two-day conference on cloud-native, AI, and distributed systems.\",
+    \"type\": \"CONFERENCE\",
+    \"eventDate\": \"${NEXT_YEAR}-10-20T09:00:00\",
+    \"capacity\": 1200,
+    \"price\": \"199.99\",
+    \"locationVenue\": \"Convention Centre\",
+    \"locationCity\": \"San Francisco\",
+    \"locationCountry\": \"USA\"
+  }") && ok "Created event: Tech Innovation Conference ${NEXT_YEAR}" || fail "Failed to create event 2"
 
 EVENT3_JSON=$(curl -sf -X POST "${EVENT_SERVICE_URL}/api/v1/events" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Champions League Final Viewing",
-    "description": "Live screening of the Champions League final with food and drinks.",
-    "type": "SPORTS",
-    "eventDate": "2025-06-01T20:00:00",
-    "capacity": 800,
-    "price": "45.00",
-    "locationVenue": "Olympic Stadium Lounge",
-    "locationCity": "London",
-    "locationCountry": "UK"
-  }') && ok "Created event: Champions League Final Viewing" || fail "Failed to create event 3"
+  -d "{
+    \"name\": \"Champions League Final Viewing\",
+    \"description\": \"Live screening of the Champions League final with food and drinks.\",
+    \"type\": \"SPORTS\",
+    \"eventDate\": \"${NEXT_YEAR}-06-01T20:00:00\",
+    \"capacity\": 800,
+    \"price\": \"45.00\",
+    \"locationVenue\": \"Olympic Stadium Lounge\",
+    \"locationCity\": \"London\",
+    \"locationCountry\": \"UK\"
+  }") && ok "Created event: Champions League Final Viewing" || fail "Failed to create event 3"
 
 # Extract IDs
 EVENT1_ID=$(json_field "$EVENT1_JSON" "id")
