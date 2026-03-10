@@ -5,9 +5,13 @@
 
 echo "🚀 Inicializando DynamoDB para Booking Service..."
 
+export AWS_ACCESS_KEY_ID=test
+export AWS_SECRET_ACCESS_KEY=test
+export AWS_DEFAULT_REGION=us-east-1
+
 # Esperar a que LocalStack esté listo
 echo "⏳ Esperando a que LocalStack esté disponible..."
-until curl -s http://localhost:4566/_localstack/health | grep -q "\"dynamodb\": \"available\""; do
+until curl -s http://localhost:4566/_localstack/health | grep -qE "\"dynamodb\": \"(available|running)\""; do
   echo "   Esperando DynamoDB..."
   sleep 2
 done
@@ -17,7 +21,7 @@ echo "✅ LocalStack está listo!"
 # Crear tabla de Bookings con GSI
 echo "📦 Creando tabla 'Bookings' con índices GSI..."
 
-awslocal dynamodb create-table \
+aws --endpoint-url=http://localhost:4566 dynamodb create-table \
   --table-name Bookings \
   --attribute-definitions \
     AttributeName=PK,AttributeType=S \
@@ -63,7 +67,7 @@ echo "✅ Tabla 'Bookings' creada exitosamente!"
 
 # Verificar que la tabla existe
 echo "🔍 Verificando tabla..."
-awslocal dynamodb describe-table --table-name Bookings --region us-east-1 | grep TableName
+aws --endpoint-url=http://localhost:4566 dynamodb describe-table --table-name Bookings --region us-east-1 | grep TableName
 
 echo ""
 echo "✨ DynamoDB inicializado correctamente!"
@@ -74,4 +78,4 @@ echo "   - GSI 1: UserBookingsIndex (userId + createdAt)"
 echo "   - GSI 2: EventBookingsIndex (eventId + createdAt)"
 echo ""
 echo "🧪 Para probar:"
-echo "   awslocal dynamodb scan --table-name Bookings"
+echo "   aws --endpoint-url=http://localhost:4566 dynamodb scan --table-name Bookings"
