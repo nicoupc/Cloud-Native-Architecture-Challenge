@@ -1,442 +1,569 @@
 {
-	"info": {
-		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-		"name": "Cloud-Native Event Management Platform",
-		"description": "API collection for the Cloud-Native Event Management platform consisting of 4 microservices: Event Service (Java/Spring Boot), Booking Service (Node.js), Payment Service (Go), and Notification Service (Python/SQS).",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"variable": [
-		{
-			"key": "event_service_url",
-			"value": "http://localhost:8080",
-			"type": "string"
-		},
-		{
-			"key": "booking_service_url",
-			"value": "http://localhost:3001",
-			"type": "string"
-		},
-		{
-			"key": "payment_service_url",
-			"value": "http://localhost:3002",
-			"type": "string"
-		},
-		{
-			"key": "localstack_url",
-			"value": "http://localhost:4566",
-			"type": "string"
-		},
-		{
-			"key": "event_id",
-			"value": "550e8400-e29b-41d4-a716-446655440000",
-			"type": "string"
-		},
-		{
-			"key": "booking_id",
-			"value": "660e8400-e29b-41d4-a716-446655440000",
-			"type": "string"
-		},
-		{
-			"key": "saga_id",
-			"value": "770e8400-e29b-41d4-a716-446655440000",
-			"type": "string"
-		},
-		{
-			"key": "user_id",
-			"value": "550e8400-e29b-41d4-a716-446655440001",
-			"type": "string"
-		}
-	],
-	"item": [
-		{
-			"name": "Event Service",
-			"description": "Java/Spring Boot service managing events (port 8080)",
-			"item": [
-				{
-					"name": "Create Event",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"name\": \"Rock Concert\",\n\t\"description\": \"Amazing rock concert\",\n\t\"type\": \"CONCERT\",\n\t\"eventDate\": \"2026-12-31T20:00:00\",\n\t\"capacity\": 1000,\n\t\"price\": \"50.00\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{event_service_url}}/api/v1/events",
-							"host": ["{{event_service_url}}"],
-							"path": ["api", "v1", "events"]
-						},
-						"description": "Create a new event with the given details."
-					},
-					"response": []
-				},
-				{
-					"name": "List All Events",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{event_service_url}}/api/v1/events",
-							"host": ["{{event_service_url}}"],
-							"path": ["api", "v1", "events"]
-						},
-						"description": "Retrieve a list of all events."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Event by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{event_service_url}}/api/v1/events/{{event_id}}",
-							"host": ["{{event_service_url}}"],
-							"path": ["api", "v1", "events", "{{event_id}}"]
-						},
-						"description": "Retrieve a specific event by its ID."
-					},
-					"response": []
-				},
-				{
-					"name": "Publish Event",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{event_service_url}}/api/v1/events/{{event_id}}/publish",
-							"host": ["{{event_service_url}}"],
-							"path": ["api", "v1", "events", "{{event_id}}", "publish"]
-						},
-						"description": "Publish an event to make it available for booking."
-					},
-					"response": []
-				},
-				{
-					"name": "Cancel Event",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"reason\": \"Event cancelled due to weather\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{event_service_url}}/api/v1/events/{{event_id}}/cancel",
-							"host": ["{{event_service_url}}"],
-							"path": ["api", "v1", "events", "{{event_id}}", "cancel"]
-						},
-						"description": "Cancel an event with a reason."
-					},
-					"response": []
-				},
-				{
-					"name": "Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{event_service_url}}/api/v1/events/health",
-							"host": ["{{event_service_url}}"],
-							"path": ["api", "v1", "events", "health"]
-						},
-						"description": "Check the health status of the Event Service."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Booking Service",
-			"description": "Node.js service managing bookings (port 3001)",
-			"item": [
-				{
-					"name": "Create Booking",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"userId\": \"550e8400-e29b-41d4-a716-446655440001\",\n\t\"eventId\": \"{{event_id}}\",\n\t\"ticketQuantity\": 3,\n\t\"pricePerTicket\": 50.00\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{booking_service_url}}/api/v1/bookings",
-							"host": ["{{booking_service_url}}"],
-							"path": ["api", "v1", "bookings"]
-						},
-						"description": "Create a new booking for an event."
-					},
-					"response": []
-				},
-				{
-					"name": "Confirm Booking",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{booking_service_url}}/api/v1/bookings/{{booking_id}}/confirm",
-							"host": ["{{booking_service_url}}"],
-							"path": ["api", "v1", "bookings", "{{booking_id}}", "confirm"]
-						},
-						"description": "Confirm a pending booking."
-					},
-					"response": []
-				},
-				{
-					"name": "Cancel Booking",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"reason\": \"Changed my mind\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{booking_service_url}}/api/v1/bookings/{{booking_id}}/cancel",
-							"host": ["{{booking_service_url}}"],
-							"path": ["api", "v1", "bookings", "{{booking_id}}", "cancel"]
-						},
-						"description": "Cancel a booking with a reason."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Booking by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{booking_service_url}}/api/v1/bookings/{{booking_id}}",
-							"host": ["{{booking_service_url}}"],
-							"path": ["api", "v1", "bookings", "{{booking_id}}"]
-						},
-						"description": "Retrieve a specific booking by its ID."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Bookings by User",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{booking_service_url}}/api/v1/bookings/user/{{user_id}}",
-							"host": ["{{booking_service_url}}"],
-							"path": ["api", "v1", "bookings", "user", "{{user_id}}"]
-						},
-						"description": "Retrieve all bookings for a specific user."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Bookings by Event",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{booking_service_url}}/api/v1/bookings/event/{{event_id}}",
-							"host": ["{{booking_service_url}}"],
-							"path": ["api", "v1", "bookings", "event", "{{event_id}}"]
-						},
-						"description": "Retrieve all bookings for a specific event."
-					},
-					"response": []
-				},
-				{
-					"name": "Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{booking_service_url}}/health",
-							"host": ["{{booking_service_url}}"],
-							"path": ["health"]
-						},
-						"description": "Check the health status of the Booking Service."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Payment Service",
-			"description": "Go service managing payment sagas (port 3002)",
-			"item": [
-				{
-					"name": "Start Payment Saga",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n\t\"booking_id\": \"{{booking_id}}\",\n\t\"amount\": 150.00,\n\t\"currency\": \"USD\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{payment_service_url}}/api/v1/sagas",
-							"host": ["{{payment_service_url}}"],
-							"path": ["api", "v1", "sagas"]
-						},
-						"description": "Start a new payment saga for a booking."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Saga by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{payment_service_url}}/api/v1/sagas/{{saga_id}}",
-							"host": ["{{payment_service_url}}"],
-							"path": ["api", "v1", "sagas", "{{saga_id}}"]
-						},
-						"description": "Retrieve a specific payment saga by its ID."
-					},
-					"response": []
-				},
-				{
-					"name": "List All Sagas",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{payment_service_url}}/api/v1/sagas",
-							"host": ["{{payment_service_url}}"],
-							"path": ["api", "v1", "sagas"]
-						},
-						"description": "Retrieve a list of all payment sagas."
-					},
-					"response": []
-				},
-				{
-					"name": "Force Compensation",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"url": {
-							"raw": "{{payment_service_url}}/api/v1/sagas/{{saga_id}}/compensate",
-							"host": ["{{payment_service_url}}"],
-							"path": ["api", "v1", "sagas", "{{saga_id}}", "compensate"]
-						},
-						"description": "Force compensation (rollback) of a payment saga."
-					},
-					"response": []
-				},
-				{
-					"name": "Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{payment_service_url}}/health",
-							"host": ["{{payment_service_url}}"],
-							"path": ["health"]
-						},
-						"description": "Check the health status of the Payment Service."
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Notification Service",
-			"description": "Python service consuming notifications from SQS (no REST API). Use LocalStack SQS to send test messages.",
-			"item": [
-				{
-					"name": "Send Test Notification to SQS",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/x-www-form-urlencoded"
-							}
-						],
-						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "Action",
-									"value": "SendMessage",
-									"type": "text"
-								},
-								{
-									"key": "MessageBody",
-									"value": "{\"type\":\"BOOKING_CONFIRMED\",\"recipient\":\"test@test.com\",\"data\":{\"bookingId\":\"123\",\"eventName\":\"Test\"}}",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "{{localstack_url}}/000000000000/notification-queue?Action=SendMessage&MessageBody={\"type\":\"BOOKING_CONFIRMED\",\"recipient\":\"test@test.com\",\"data\":{\"bookingId\":\"123\",\"eventName\":\"Test\"}}",
-							"host": ["{{localstack_url}}"],
-							"path": ["000000000000", "notification-queue"],
-							"query": [
-								{
-									"key": "Action",
-									"value": "SendMessage"
-								},
-								{
-									"key": "MessageBody",
-									"value": "{\"type\":\"BOOKING_CONFIRMED\",\"recipient\":\"test@test.com\",\"data\":{\"bookingId\":\"123\",\"eventName\":\"Test\"}}"
-								}
-							]
-						},
-						"description": "Send a test notification message directly to the SQS notification queue via LocalStack. The Notification Service will pick up and process this message."
-					},
-					"response": []
-				}
-			]
-		}
-	]
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Plataforma de Gestión de Eventos Cloud-Native",
+    "description": "Colección de APIs para la Plataforma de Gestión de Eventos Cloud-Native, compuesta por 4 microservicios:\n\n• Event Service (Java/Spring Boot) — Puerto 8080\n• Booking Service (Node.js/Express + TypeScript) — Puerto 3001\n• Payment Service (Python/FastAPI) — Puerto 3002\n• Notification Service (Python/asyncio) — Consumidor SQS\n\n📌 Para usar esta colección:\n1. Importa este archivo en Postman\n2. Asegúrate de que los servicios estén corriendo (ver GUIA-INICIO-RAPIDO.md)\n3. Ejecuta las requests en orden: Crear Evento → Publicar → Crear Reserva → Iniciar Saga",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "event_service_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "booking_service_url",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "payment_service_url",
+      "value": "http://localhost:3002",
+      "type": "string"
+    },
+    {
+      "key": "localstack_url",
+      "value": "http://localhost:4566",
+      "type": "string"
+    },
+    {
+      "key": "event_id",
+      "value": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "660e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    },
+    {
+      "key": "saga_id",
+      "value": "770e8400-e29b-41d4-a716-446655440000",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "550e8400-e29b-41d4-a716-446655440001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "📦 Event Service (Java :8080)",
+      "description": "Servicio de eventos — Java 17 / Spring Boot 3 — Arquitectura Hexagonal + DDD.\nGestiona el ciclo de vida de eventos: creación (DRAFT), publicación (PUBLISHED) y cancelación (CANCELLED).",
+      "item": [
+        {
+          "name": "1. Crear Evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"name\": \"Rock Concert\",\n\t\"description\": \"Amazing rock concert\",\n\t\"type\": \"CONCERT\",\n\t\"eventDate\": \"2026-12-31T20:00:00\",\n\t\"capacity\": 1000,\n\t\"price\": \"50.00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{event_service_url}}/api/v1/events",
+              "host": [
+                "{{event_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events"
+              ]
+            },
+            "description": "Crear un nuevo evento con los datos indicados. Se crea en estado DRAFT. Copia el 'id' de la respuesta para usarlo en los siguientes requests."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Listar Todos los Eventos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_service_url}}/api/v1/events",
+              "host": [
+                "{{event_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events"
+              ]
+            },
+            "description": "Obtener la lista completa de todos los eventos."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Obtener Evento por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_service_url}}/api/v1/events/{{event_id}}",
+              "host": [
+                "{{event_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{event_id}}"
+              ]
+            },
+            "description": "Obtener los datos de un evento específico usando su ID."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Publicar Evento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{event_service_url}}/api/v1/events/{{event_id}}/publish",
+              "host": [
+                "{{event_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{event_id}}",
+                "publish"
+              ]
+            },
+            "description": "Publicar un evento para que esté disponible para reservas. Cambia el estado de DRAFT a PUBLISHED. Reemplaza {{event_id}} con el ID real."
+          },
+          "response": []
+        },
+        {
+          "name": "5. Cancelar Evento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"reason\": \"Event cancelled due to weather\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{event_service_url}}/api/v1/events/{{event_id}}/cancel",
+              "host": [
+                "{{event_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "{{event_id}}",
+                "cancel"
+              ]
+            },
+            "description": "Cancelar un evento con un motivo. Cambia el estado a CANCELLED."
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check (Salud)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_service_url}}/api/v1/events/health",
+              "host": [
+                "{{event_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "events",
+                "health"
+              ]
+            },
+            "description": "Verificar que el Event Service esté funcionando correctamente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 Booking Service (Node.js :3001)",
+      "description": "Servicio de reservas — Node.js / Express + TypeScript — Patrón CQRS.\nGestiona reservas de entradas: crear, confirmar, cancelar y consultar por usuario o evento.",
+      "item": [
+        {
+          "name": "1. Crear Reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"userId\": \"550e8400-e29b-41d4-a716-446655440001\",\n\t\"eventId\": \"{{event_id}}\",\n\t\"ticketQuantity\": 3,\n\t\"pricePerTicket\": 50.00\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{booking_service_url}}/api/v1/bookings",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            },
+            "description": "Crear una nueva reserva para un evento. Se crea en estado PENDING. Copia el 'bookingId' de la respuesta para usarlo luego."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Confirmar Reserva",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{booking_service_url}}/api/v1/bookings/{{booking_id}}/confirm",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{booking_id}}",
+                "confirm"
+              ]
+            },
+            "description": "Confirmar una reserva pendiente. Cambia el estado a CONFIRMED. Normalmente lo hace la Saga automáticamente."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Cancelar Reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"reason\": \"Changed my mind\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{booking_service_url}}/api/v1/bookings/{{booking_id}}/cancel",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{booking_id}}",
+                "cancel"
+              ]
+            },
+            "description": "Cancelar una reserva con un motivo."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Obtener Reserva por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{booking_service_url}}/api/v1/bookings/{{booking_id}}",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "{{booking_id}}"
+              ]
+            },
+            "description": "Obtener los datos de una reserva específica por su ID."
+          },
+          "response": []
+        },
+        {
+          "name": "5. Reservas por Usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{booking_service_url}}/api/v1/bookings/user/{{user_id}}",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "user",
+                "{{user_id}}"
+              ]
+            },
+            "description": "Obtener todas las reservas de un usuario específico (consulta CQRS vía GSI userId-index)."
+          },
+          "response": []
+        },
+        {
+          "name": "6. Reservas por Evento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{booking_service_url}}/api/v1/bookings/event/{{event_id}}",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "event",
+                "{{event_id}}"
+              ]
+            },
+            "description": "Obtener todas las reservas de un evento específico (consulta CQRS vía GSI eventId-index)."
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check (Salud)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{booking_service_url}}/health",
+              "host": [
+                "{{booking_service_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Verificar que el Booking Service esté funcionando correctamente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 Payment Service (Python :3002)",
+      "description": "Servicio de pagos — Python / FastAPI — Patrón Saga Orchestration.\nOrquesta transacciones distribuidas: ReserveBooking → ProcessPayment → ConfirmBooking → SendNotification.",
+      "item": [
+        {
+          "name": "1. Iniciar Saga de Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n\t\"booking_id\": \"{{booking_id}}\",\n\t\"amount\": 150.00,\n\t\"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{payment_service_url}}/api/v1/sagas",
+              "host": [
+                "{{payment_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sagas"
+              ]
+            },
+            "description": "Iniciar una nueva saga de pago para una reserva. La saga ejecuta 4 pasos: reservar → pagar → confirmar → notificar. Reemplaza {{booking_id}} con un ID real de una reserva existente."
+          },
+          "response": []
+        },
+        {
+          "name": "2. Obtener Saga por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payment_service_url}}/api/v1/sagas/{{saga_id}}",
+              "host": [
+                "{{payment_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sagas",
+                "{{saga_id}}"
+              ]
+            },
+            "description": "Obtener el estado actual de una saga por su ID. Muestra los pasos completados y el estado general (RUNNING, COMPLETED, COMPENSATED)."
+          },
+          "response": []
+        },
+        {
+          "name": "3. Listar Todas las Sagas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payment_service_url}}/api/v1/sagas",
+              "host": [
+                "{{payment_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sagas"
+              ]
+            },
+            "description": "Obtener la lista completa de todas las sagas de pago."
+          },
+          "response": []
+        },
+        {
+          "name": "4. Forzar Compensación",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{payment_service_url}}/api/v1/sagas/{{saga_id}}/compensate",
+              "host": [
+                "{{payment_service_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "sagas",
+                "{{saga_id}}",
+                "compensate"
+              ]
+            },
+            "description": "Forzar la compensación (rollback) de una saga de pago. Ejecuta las acciones compensatorias en orden inverso para revertir los cambios."
+          },
+          "response": []
+        },
+        {
+          "name": "Health Check (Salud)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{payment_service_url}}/health",
+              "host": [
+                "{{payment_service_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Verificar que el Payment Service esté funcionando correctamente."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📦 Notification Service (Python - SQS)",
+      "description": "Servicio de notificaciones — Python / asyncio — Consumidor SQS con Token Bucket.\nNo tiene API REST. Consume mensajes de la cola notification-queue y envía emails (proveedor mock).\nEsta request envía un mensaje de prueba directamente a la cola SQS vía LocalStack.",
+      "item": [
+        {
+          "name": "Enviar Notificación de Prueba a SQS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "Action",
+                  "value": "SendMessage",
+                  "type": "text"
+                },
+                {
+                  "key": "MessageBody",
+                  "value": "{\"type\":\"BOOKING_CONFIRMED\",\"recipient\":\"test@test.com\",\"data\":{\"bookingId\":\"123\",\"eventName\":\"Test\"}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{localstack_url}}/000000000000/notification-queue?Action=SendMessage&MessageBody={\"type\":\"BOOKING_CONFIRMED\",\"recipient\":\"test@test.com\",\"data\":{\"bookingId\":\"123\",\"eventName\":\"Test\"}}",
+              "host": [
+                "{{localstack_url}}"
+              ],
+              "path": [
+                "000000000000",
+                "notification-queue"
+              ],
+              "query": [
+                {
+                  "key": "Action",
+                  "value": "SendMessage"
+                },
+                {
+                  "key": "MessageBody",
+                  "value": "{\"type\":\"BOOKING_CONFIRMED\",\"recipient\":\"test@test.com\",\"data\":{\"bookingId\":\"123\",\"eventName\":\"Test\"}}"
+                }
+              ]
+            },
+            "description": "Enviar un mensaje de notificación de prueba directamente a la cola SQS notification-queue vía LocalStack. El Notification Service lo recogerá y procesará automáticamente."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
 }
