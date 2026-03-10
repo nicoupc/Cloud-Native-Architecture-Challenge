@@ -1,41 +1,48 @@
-# ADR-006: EventBridge as Central Event Bus
+# ADR-006: EventBridge como Bus Central de Eventos
 
-## Status
+## Estado
 
-Accepted
+Aceptada
 
-## Context
+## Contexto
 
-The microservices architecture requires asynchronous communication between services for event-driven workflows. The AWS ecosystem offers several messaging options:
+La arquitectura de microservicios requiere comunicación asíncrona entre servicios para flujos de trabajo dirigidos por eventos. El ecosistema de AWS ofrece varias opciones de mensajería:
 
-- **EventBridge**: Content-based routing with pattern matching, managed event bus.
-- **SQS**: Point-to-point message queuing.
-- **SNS**: Pub/sub topic-based messaging.
+- **EventBridge**: Enrutamiento basado en contenido con coincidencia de patrones, bus de eventos administrado.
+- **SQS**: Cola de mensajes punto a punto.
+- **SNS**: Mensajería pub/sub basada en topics.
 
-A routing strategy was needed that decouples event producers from consumers, supports filtering by event type, and minimizes operational overhead of managing topic subscriptions.
+Se necesitaba una estrategia de enrutamiento que desacople a los productores de eventos de los consumidores, admita filtrado por tipo de evento y minimice la sobrecarga operativa de gestionar suscripciones a topics.
 
-## Decision
+## Decisión
 
-Use Amazon EventBridge as the central event bus for all inter-service communication:
+Utilizar Amazon EventBridge como bus central de eventos para toda la comunicación entre servicios:
 
-- All services publish domain events to a custom event bus named `event-management-bus`.
-- EventBridge rules route events to SQS queues based on `source` and `detail-type` patterns.
-- Consumer services poll their dedicated SQS queues for messages.
-- **SNS is not used** — EventBridge rules replace the need for SNS topic management and subscription filtering.
+- Todos los servicios publican eventos de dominio en un bus de eventos personalizado llamado `event-management-bus`.
+- Las reglas de EventBridge enrutan eventos a colas SQS basándose en patrones de `source` y `detail-type`.
+- Los servicios consumidores consultan sus colas SQS dedicadas para obtener mensajes.
+- **No se utiliza SNS** — las reglas de EventBridge reemplazan la necesidad de gestionar topics SNS y filtrado de suscripciones.
 
-Five routing rules connect services to the `notification-queue`:
+Siete reglas de enrutamiento conectan los servicios con sus colas correspondientes:
 
-1. `booking-created` — routes booking creation events.
-2. `booking-confirmed` — routes booking confirmation events.
-3. `booking-cancelled` — routes booking cancellation events.
-4. `payment-completed` — routes successful payment events.
-5. `payment-failed` — routes failed payment events.
+**Reglas hacia `notification-queue`:**
 
-## Consequences
+1. `booking-created` — enruta eventos de creación de reservas.
+2. `booking-confirmed` — enruta eventos de confirmación de reservas.
+3. `booking-cancelled` — enruta eventos de cancelación de reservas.
+4. `payment-completed` — enruta eventos de pagos exitosos.
+5. `payment-failed` — enruta eventos de pagos fallidos.
 
-- **Centralized event routing** with pattern-based filtering simplifies the event flow architecture. New consumers can be added by creating new rules without modifying producers.
-- **Decoupled producers and consumers**: Services publish events without knowledge of who consumes them. Routing is managed entirely in EventBridge rules.
-- **Events are routable by `source` and `detail-type`**, enabling fine-grained filtering without custom message attributes.
-- **Eliminates SNS complexity**: EventBridge rules replace the need to create and manage SNS topics, subscriptions, and filter policies.
-- **Trade-off — EventBridge limits**: EventBridge has a payload size limit (256 KB) and rate limits that may require consideration at very high throughput. Sufficient for current scale.
-- **Observability**: EventBridge integrates with CloudWatch for monitoring rule invocations and failed deliveries.
+**Reglas hacia `booking-events-queue`:**
+
+6. `event-created` — enruta eventos de creación de eventos (EventCreated).
+7. `event-cancelled` — enruta eventos de cancelación de eventos (EventCancelled).
+
+## Consecuencias
+
+- **Enrutamiento centralizado de eventos** con filtrado basado en patrones simplifica la arquitectura del flujo de eventos. Se pueden agregar nuevos consumidores creando nuevas reglas sin modificar los productores.
+- **Productores y consumidores desacoplados**: Los servicios publican eventos sin conocimiento de quién los consume. El enrutamiento se gestiona completamente en las reglas de EventBridge.
+- **Los eventos son enrutables por `source` y `detail-type`**, lo que permite un filtrado granular sin atributos de mensaje personalizados.
+- **Elimina la complejidad de SNS**: Las reglas de EventBridge reemplazan la necesidad de crear y gestionar topics SNS, suscripciones y políticas de filtrado.
+- **Compromiso — límites de EventBridge**: EventBridge tiene un límite de tamaño de payload (256 KB) y límites de tasa que pueden requerir consideración en escenarios de muy alto rendimiento. Suficiente para la escala actual.
+- **Observabilidad**: EventBridge se integra con CloudWatch para monitorear invocaciones de reglas y entregas fallidas.

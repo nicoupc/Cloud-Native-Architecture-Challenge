@@ -1,28 +1,28 @@
-# ADR-002: CQRS with DynamoDB GSI for Booking Service
+# ADR-002: CQRS con DynamoDB GSI para el Booking Service
 
-## Status
+## Estado
 
-Accepted
+Aceptada
 
-## Context
+## Contexto
 
-The Booking Service exhibits asymmetric read and write patterns. Write operations are transactional in nature (create booking, confirm booking, cancel booking) and require strong consistency. Read operations need optimized queries by different access patterns — primarily by user (to list a user's bookings) and by event (to list all bookings for an event). A traditional relational model would require complex joins or multiple queries to serve these different access patterns efficiently.
+El Booking Service presenta patrones de lectura y escritura asimétricos. Las operaciones de escritura son de naturaleza transaccional (crear reserva, confirmar reserva, cancelar reserva) y requieren consistencia fuerte. Las operaciones de lectura necesitan consultas optimizadas según diferentes patrones de acceso — principalmente por usuario (para listar las reservas de un usuario) y por evento (para listar todas las reservas de un evento). Un modelo relacional tradicional requeriría joins complejos o múltiples consultas para servir estos diferentes patrones de acceso de manera eficiente.
 
-## Decision
+## Decisión
 
-Implement CQRS (Command Query Responsibility Segregation) using DynamoDB as the backing store:
+Implementar CQRS (Command Query Responsibility Segregation) utilizando DynamoDB como almacén de datos:
 
-- **Write model**: Uses the primary key (`bookingId`) for all transactional operations (create, confirm, cancel). Ensures strong consistency for mutations.
-- **Read model**: Uses Global Secondary Indexes (GSIs) to serve optimized read queries:
-  - `UserBookingsIndex`: GSI on `userId` to efficiently query all bookings for a given user.
-  - `EventBookingsIndex`: GSI on `eventId` to efficiently query all bookings for a given event.
+- **Modelo de escritura**: Utiliza la clave primaria (`bookingId`) para todas las operaciones transaccionales (crear, confirmar, cancelar). Garantiza consistencia fuerte para las mutaciones.
+- **Modelo de lectura**: Utiliza Global Secondary Indexes (GSIs) para servir consultas de lectura optimizadas:
+  - `UserBookingsIndex`: GSI sobre `userId` para consultar eficientemente todas las reservas de un usuario dado.
+  - `EventBookingsIndex`: GSI sobre `eventId` para consultar eficientemente todas las reservas de un evento dado.
 
-A single DynamoDB table serves both the write and read models, with GSIs providing the read-side projections.
+Una única tabla de DynamoDB sirve tanto al modelo de escritura como al de lectura, con los GSIs proporcionando las proyecciones del lado de lectura.
 
-## Consequences
+## Consecuencias
 
-- **Eventual consistency** between the write model (base table) and read models (GSIs), as DynamoDB GSIs are eventually consistent by default.
-- **Optimized read performance** without complex joins — each access pattern is served by a dedicated index.
-- **Single table design** reduces operational complexity compared to maintaining separate read and write datastores.
-- **Cost-efficient**: GSIs only project the attributes needed for each read pattern, minimizing storage and read costs.
-- **Trade-off**: Adding new access patterns in the future requires creating additional GSIs, which have a per-table limit (20 GSIs per table).
+- **Consistencia eventual** entre el modelo de escritura (tabla base) y los modelos de lectura (GSIs), ya que los GSIs de DynamoDB son eventualmente consistentes por defecto.
+- **Rendimiento de lectura optimizado** sin joins complejos — cada patrón de acceso es servido por un índice dedicado.
+- **Diseño de tabla única** reduce la complejidad operativa en comparación con mantener almacenes de datos separados para lectura y escritura.
+- **Costo-eficiente**: Los GSIs solo proyectan los atributos necesarios para cada patrón de lectura, minimizando los costos de almacenamiento y lectura.
+- **Compromiso**: Agregar nuevos patrones de acceso en el futuro requiere crear GSIs adicionales, los cuales tienen un límite por tabla (20 GSIs por tabla).

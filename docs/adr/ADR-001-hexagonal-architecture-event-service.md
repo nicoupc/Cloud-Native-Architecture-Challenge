@@ -1,27 +1,27 @@
-# ADR-001: Hexagonal Architecture for Event Service
+# ADR-001: Hexagonal Architecture para Event Service
 
-## Status
+## Estado
 
-Accepted
+Aceptada
 
-## Context
+## Contexto
 
-The Event Service needs to isolate business logic from infrastructure concerns such as PostgreSQL, EventBridge, and REST APIs. The team required high testability of domain logic and the ability to swap infrastructure adapters without modifying core business rules. A clear architectural pattern was needed to enforce dependency inversion and maintain separation of concerns as the service evolves.
+El Event Service necesita aislar la lógica de negocio de las preocupaciones de infraestructura como PostgreSQL, EventBridge y las APIs REST. El equipo requería una alta capacidad de prueba (testability) de la lógica de dominio y la posibilidad de intercambiar adaptadores de infraestructura sin modificar las reglas de negocio principales. Se necesitaba un patrón arquitectónico claro para aplicar la inversión de dependencias y mantener la separación de responsabilidades a medida que el servicio evoluciona.
 
-## Decision
+## Decisión
 
-Use Hexagonal Architecture (Ports & Adapters) with three distinct layers:
+Utilizar Hexagonal Architecture (Ports & Adapters) con tres capas diferenciadas:
 
-- **Domain layer**: Contains the `Event` aggregate, value objects, and domain logic. Has no dependencies on infrastructure.
-- **Application layer**: Contains application services that orchestrate use cases. Depends only on domain and port interfaces.
-- **Infrastructure layer**: Contains adapters for JPA (PostgreSQL), EventBridge (event publishing), and REST (HTTP API). Implements port interfaces defined in the domain/application layers.
+- **Capa de Dominio**: Contiene el agregado `Event`, objetos de valor y la lógica de dominio. No tiene dependencias con la infraestructura.
+- **Capa de Aplicación**: Contiene los servicios de aplicación que orquestan los casos de uso. Depende únicamente del dominio y de las interfaces de puertos.
+- **Capa de Infraestructura**: Contiene los adaptadores para JPA (PostgreSQL), EventBridge (publicación de eventos) y REST (API HTTP). Implementa las interfaces de puertos definidas en las capas de dominio y aplicación.
 
-Dependency flow is strictly inward: infrastructure → application → domain.
+El flujo de dependencias es estrictamente hacia adentro: infraestructura → aplicación → dominio.
 
-## Consequences
+## Consecuencias
 
-- **Clean dependency inversion** via port interfaces (`EventRepository`, `EventPublisher`) allows the domain to remain infrastructure-agnostic.
-- **Domain is fully testable** without spinning up databases, message brokers, or HTTP servers.
-- **Adapter swappability**: Infrastructure adapters (e.g., switching from PostgreSQL to another datastore) can be replaced without touching business logic.
-- **Trade-off**: Slightly more boilerplate code due to port interfaces and adapter implementations, but this is offset by significantly better maintainability and testability.
-- **Onboarding**: New developers must understand the hexagonal pattern, but the clear layer boundaries make the codebase easier to navigate once understood.
+- **Inversión de dependencias limpia** mediante interfaces de puertos (`EventRepository`, `EventPublisher`) que permiten que el dominio permanezca agnóstico a la infraestructura.
+- **El dominio es completamente testeable** sin necesidad de levantar bases de datos, brokers de mensajes ni servidores HTTP.
+- **Intercambiabilidad de adaptadores**: Los adaptadores de infraestructura (por ejemplo, cambiar de PostgreSQL a otro almacén de datos) pueden reemplazarse sin modificar la lógica de negocio.
+- **Compromiso**: Un poco más de código repetitivo (boilerplate) debido a las interfaces de puertos y las implementaciones de adaptadores, pero esto se compensa con una mantenibilidad y capacidad de prueba significativamente mejores.
+- **Incorporación**: Los nuevos desarrolladores deben comprender el patrón hexagonal, pero los límites claros entre capas hacen que el código sea más fácil de navegar una vez comprendido.

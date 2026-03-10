@@ -14,23 +14,27 @@ sequenceDiagram
     participant EventService as Event Service<br/>(Java :8080)
     participant PostgreSQL as Event DB<br/>(PostgreSQL)
     participant EventBridge as AWS EventBridge
-    participant SQS as notification-queue<br/>(SQS)
+    participant SQS_N as notification-queue<br/>(SQS)
+    participant SQS_B as booking-events-queue<br/>(SQS)
     participant NotificationService as Notification Service<br/>(Python - SQS Consumer)
+    participant BookingService as Booking Service<br/>(Node.js :3001)
 
-    Note over User,NotificationService: Fase 1 — Creación del evento
+    Note over User,BookingService: Fase 1 — Creación del evento
 
     User->>EventService: POST /api/v1/events<br/>(name, description, type, date, capacity, price)
     EventService->>PostgreSQL: Guardar evento (status=DRAFT)
     EventService->>EventBridge: Publicar evento EventCreated
+    EventBridge->>SQS_B: Enrutar EventCreated a booking-events-queue
+    SQS_B->>BookingService: Poll del mensaje → Registrar disponibilidad
     EventService-->>User: 201 Created (datos del evento)
 
-    Note over User,NotificationService: Fase 2 — Publicación del evento
+    Note over User,BookingService: Fase 2 — Publicación del evento
 
     User->>EventService: POST /api/v1/events/{id}/publish
     EventService->>PostgreSQL: Actualizar status=PUBLISHED
     EventService->>EventBridge: Publicar evento EventPublished
-    EventBridge->>SQS: Enrutar EventPublished a notification-queue
-    SQS->>NotificationService: Poll del mensaje
+    EventBridge->>SQS_N: Enrutar EventPublished a notification-queue
+    SQS_N->>NotificationService: Poll del mensaje
     NotificationService->>NotificationService: Enviar notificación por email
     EventService-->>User: 200 OK (evento publicado)
 ```
@@ -68,16 +72,16 @@ sequenceDiagram
 
     User->>PaymentService: POST /api/v1/sagas<br/>(booking_id, amount, currency)
     PaymentService->>DynamoDB_P: Crear saga (status=RUNNING)
-    PaymentService->>PaymentService: Step 1 — RESERVE_BOOKING (interno)
+    PaymentService->>PaymentService: Step 1 — RESERVE_BOOKING
     PaymentService->>PaymentService: Step 2 — PROCESS_PAYMENT (validar pago)
     PaymentService->>BookingService: POST /api/v1/bookings/{id}/confirm<br/>(Step 3 — CONFIRM_BOOKING)
     BookingService->>DynamoDB_B: Actualizar status=CONFIRMED
     BookingService-->>PaymentService: 200 OK (confirmada)
+    PaymentService->>EventBridge: Step 4 — SEND_NOTIFICATION<br/>(Publicar PaymentConfirmed)
     PaymentService->>DynamoDB_P: Actualizar saga status=COMPLETED
 
     Note over User,NotificationService: Fase 3 — Notificación asíncrona
 
-    PaymentService->>EventBridge: Publicar evento PaymentConfirmed
     EventBridge->>SQS: Enrutar PaymentConfirmed a notification-queue
     SQS->>NotificationService: Poll del mensaje
     NotificationService->>NotificationService: Enviar email de confirmación

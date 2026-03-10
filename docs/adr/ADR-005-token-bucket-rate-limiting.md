@@ -1,31 +1,31 @@
-# ADR-005: Token Bucket Algorithm for Rate Limiting
+# ADR-005: Algoritmo Token Bucket para Rate Limiting
 
-## Status
+## Estado
 
-Accepted
+Aceptada
 
-## Context
+## Contexto
 
-The Notification Service needs rate limiting to prevent overwhelming downstream email providers and external notification channels. The rate limiting strategy must:
+El Notification Service necesita rate limiting para evitar saturar a los proveedores de correo electrónico downstream y los canales de notificación externos. La estrategia de rate limiting debe:
 
-- Control sustained throughput to stay within provider limits.
-- Allow short bursts to handle spike scenarios (e.g., popular event bookings).
-- Be simple to implement and configure.
-- Work within a single-process consumer (no distributed rate limiting needed for the current scale).
+- Controlar el throughput sostenido para mantenerse dentro de los límites del proveedor.
+- Permitir ráfagas cortas para manejar escenarios de picos de demanda (por ejemplo, reservas de eventos populares).
+- Ser sencilla de implementar y configurar.
+- Funcionar dentro de un consumidor de proceso único (no se requiere rate limiting distribuido para la escala actual).
 
-## Decision
+## Decisión
 
-Implement the Token Bucket algorithm with the following characteristics:
+Implementar el algoritmo Token Bucket con las siguientes características:
 
-- **Configurable rate**: Default of 5 messages per second (`RATE_LIMIT_PER_SECOND` environment variable).
-- **Configurable burst capacity**: Default of 10 tokens (`RATE_LIMIT_BURST` environment variable).
-- **Continuous token refill**: Tokens are added at the configured rate, up to the burst capacity maximum.
-- **Blocking consumption**: When no tokens are available, the consumer waits until a token is refilled before processing the next message.
+- **Tasa configurable**: Por defecto, 5 mensajes por segundo (variable de entorno `RATE_LIMIT_PER_SECOND`).
+- **Capacidad de ráfaga configurable**: Por defecto, 10 tokens (variable de entorno `RATE_LIMIT_BURST`).
+- **Recarga continua de tokens**: Los tokens se añaden a la tasa configurada, hasta el máximo de capacidad de ráfaga.
+- **Consumo bloqueante**: Cuando no hay tokens disponibles, el consumidor espera hasta que se recargue un token antes de procesar el siguiente mensaje.
 
-## Consequences
+## Consecuencias
 
-- **Smooth message processing under load**: The token bucket ensures a steady processing rate that respects downstream provider limits.
-- **Burst handling**: The burst capacity allows the system to absorb short spikes (up to 10 messages instantly) without dropping or delaying messages unnecessarily.
-- **Simple implementation**: The token bucket algorithm is well-understood, easy to implement in Python asyncio, and requires no external dependencies (no Redis or distributed coordination).
-- **Runtime configurability**: Rate and burst parameters are configurable via environment variables, allowing operators to tune throughput without code changes.
-- **Trade-off**: Single-process rate limiting only. If the Notification Service scales to multiple consumer instances, a distributed rate limiting solution (e.g., Redis-based) would be needed.
+- **Procesamiento fluido de mensajes bajo carga**: El token bucket garantiza una tasa de procesamiento constante que respeta los límites de los proveedores downstream.
+- **Manejo de ráfagas**: La capacidad de ráfaga permite al sistema absorber picos cortos (hasta 10 mensajes de forma instantánea) sin descartar ni retrasar mensajes innecesariamente.
+- **Implementación sencilla**: El algoritmo token bucket es ampliamente conocido, fácil de implementar en Python asyncio y no requiere dependencias externas (sin Redis ni coordinación distribuida).
+- **Configurabilidad en tiempo de ejecución**: Los parámetros de tasa y ráfaga son configurables mediante variables de entorno, lo que permite a los operadores ajustar el throughput sin modificar el código.
+- **Compromiso**: Rate limiting de proceso único solamente. Si el Notification Service escala a múltiples instancias de consumidores, se necesitaría una solución de rate limiting distribuido (por ejemplo, basada en Redis).
